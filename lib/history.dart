@@ -21,7 +21,12 @@ class _HistoryPageState extends State<HistoryPage> {
       case "Month":
         return ["September 2025", "August 2025", "July 2025", "June 2025"];
       case "Week":
-        return ["Week 36, 2025", "Week 35, 2025", "Week 34, 2025", "Week 33, 2025"];
+        return [
+          "Week 36, 2025",
+          "Week 35, 2025",
+          "Week 34, 2025",
+          "Week 33, 2025",
+        ];
       case "Day":
       default:
         return ["2025-09-02", "2025-09-01", "2025-08-31", "2025-08-30"];
@@ -33,28 +38,62 @@ class _HistoryPageState extends State<HistoryPage> {
     switch (selectedRange) {
       case "Year":
         return const [
-          FlSpot(0, 25), FlSpot(1, 28), FlSpot(2, 32), FlSpot(3, 29),
-          FlSpot(4, 35), FlSpot(5, 31), FlSpot(6, 38), FlSpot(7, 34),
-          FlSpot(8, 40), FlSpot(9, 36), FlSpot(10, 42), FlSpot(11, 39),
+          FlSpot(0, 25),
+          FlSpot(1, 28),
+          FlSpot(2, 32),
+          FlSpot(3, 29),
+          FlSpot(4, 35),
+          FlSpot(5, 31),
+          FlSpot(6, 38),
+          FlSpot(7, 34),
+          FlSpot(8, 40),
+          FlSpot(9, 36),
+          FlSpot(10, 42),
+          FlSpot(11, 39),
         ];
       case "Month":
         return const [
-          FlSpot(0, 28), FlSpot(1, 32), FlSpot(2, 25), FlSpot(3, 38),
-          FlSpot(4, 35), FlSpot(5, 42), FlSpot(6, 30), FlSpot(7, 45),
-          FlSpot(8, 38), FlSpot(9, 40), FlSpot(10, 36), FlSpot(11, 43),
-          FlSpot(12, 39), FlSpot(13, 41), FlSpot(14, 37),
+          FlSpot(0, 28),
+          FlSpot(1, 32),
+          FlSpot(2, 25),
+          FlSpot(3, 38),
+          FlSpot(4, 35),
+          FlSpot(5, 42),
+          FlSpot(6, 30),
+          FlSpot(7, 45),
+          FlSpot(8, 38),
+          FlSpot(9, 40),
+          FlSpot(10, 36),
+          FlSpot(11, 43),
+          FlSpot(12, 39),
+          FlSpot(13, 41),
+          FlSpot(14, 37),
         ];
       case "Week":
         return const [
-          FlSpot(0, 30), FlSpot(1, 35), FlSpot(2, 28), FlSpot(3, 42),
-          FlSpot(4, 38), FlSpot(5, 45), FlSpot(6, 40),
+          FlSpot(0, 30),
+          FlSpot(1, 35),
+          FlSpot(2, 28),
+          FlSpot(3, 42),
+          FlSpot(4, 38),
+          FlSpot(5, 45),
+          FlSpot(6, 40),
         ];
       case "Day":
       default:
         return const [
-          FlSpot(0, 20), FlSpot(1, 25), FlSpot(2, 18), FlSpot(3, 32),
-          FlSpot(4, 28), FlSpot(5, 36), FlSpot(6, 30), FlSpot(7, 24),
-          FlSpot(8, 38), FlSpot(9, 33), FlSpot(10, 29), FlSpot(11, 35),
+          FlSpot(0, 20),
+          FlSpot(1, 25),
+          FlSpot(2, 18),
+          FlSpot(3, 32),
+          FlSpot(4, 28),
+          FlSpot(5, 36),
+          FlSpot(6, 30),
+          FlSpot(7, 24),
+          FlSpot(8, 38),
+          FlSpot(9, 33),
+          FlSpot(10, 29),
+          FlSpot(11, 35),
         ];
     }
   }
@@ -63,8 +102,20 @@ class _HistoryPageState extends State<HistoryPage> {
   String getBottomTitle(double value) {
     switch (selectedRange) {
       case "Year":
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ];
         return value.toInt() < months.length ? months[value.toInt()] : '';
       case "Month":
         return '${value.toInt() + 1}';
@@ -167,7 +218,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         color: Colors.grey[800],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
 
                     // Time Range Selector
@@ -186,38 +237,42 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                       child: Row(
                         children: ["Day", "Week", "Month", "Year"]
-                            .map((e) => Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        selectedRange = e;
-                                        _updateDateForRange();
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      decoration: BoxDecoration(
+                            .map(
+                              (e) => Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedRange = e;
+                                      _updateDateForRange();
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: selectedRange == e
+                                          ? Colors.blue
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      e,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: selectedRange == e
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
                                         color: selectedRange == e
-                                            ? Colors.blue
-                                            : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        e,
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          fontWeight: selectedRange == e
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
-                                          color: selectedRange == e
-                                              ? Colors.white
-                                              : Colors.grey[600],
-                                        ),
+                                            ? Colors.white
+                                            : Colors.grey[600],
                                       ),
                                     ),
                                   ),
-                                ))
+                                ),
+                              ),
+                            )
                             .toList(),
                       ),
                     ),
@@ -245,7 +300,8 @@ class _HistoryPageState extends State<HistoryPage> {
                             children: [
                               // Chart Header
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     "${selectedRange}ly Speed Analysis",
@@ -273,17 +329,19 @@ class _HistoryPageState extends State<HistoryPage> {
                                         value: selectedDate,
                                         isDense: true,
                                         items: dateOptions
-                                            .map((date) => DropdownMenuItem(
-                                                  value: date,
-                                                  child: Text(
-                                                    date,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 13,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: Colors.grey[700],
-                                                    ),
+                                            .map(
+                                              (date) => DropdownMenuItem(
+                                                value: date,
+                                                child: Text(
+                                                  date,
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.grey[700],
                                                   ),
-                                                ))
+                                                ),
+                                              ),
+                                            )
                                             .toList(),
                                         onChanged: (value) {
                                           setState(() => selectedDate = value!);
@@ -311,10 +369,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                       drawHorizontalLine: true,
                                       horizontalInterval: 5,
                                       verticalInterval: 1,
-                                      getDrawingHorizontalLine: (value) => FlLine(
-                                        color: Colors.grey[200]!,
-                                        strokeWidth: 1,
-                                      ),
+                                      getDrawingHorizontalLine: (value) =>
+                                          FlLine(
+                                            color: Colors.grey[200]!,
+                                            strokeWidth: 1,
+                                          ),
                                       getDrawingVerticalLine: (value) => FlLine(
                                         color: Colors.grey[200]!,
                                         strokeWidth: 1,
@@ -327,14 +386,15 @@ class _HistoryPageState extends State<HistoryPage> {
                                           showTitles: true,
                                           reservedSize: 44,
                                           interval: 10,
-                                          getTitlesWidget: (value, meta) => Text(
-                                            '${value.toInt()}',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 11,
-                                              color: Colors.grey[600],
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                          ),
+                                          getTitlesWidget: (value, meta) =>
+                                              Text(
+                                                '${value.toInt()}',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 11,
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w400,
+                                                ),
+                                              ),
                                         ),
                                       ),
                                       bottomTitles: AxisTitles(
@@ -342,31 +402,42 @@ class _HistoryPageState extends State<HistoryPage> {
                                           showTitles: true,
                                           reservedSize: 32,
                                           interval: 1,
-                                          getTitlesWidget: (value, meta) => Padding(
-                                            padding: const EdgeInsets.only(top: 8),
-                                            child: Text(
-                                              getBottomTitle(value),
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11,
-                                                color: Colors.grey[600],
-                                                fontWeight: FontWeight.w400,
+                                          getTitlesWidget: (value, meta) =>
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 8,
+                                                ),
+                                                child: Text(
+                                                  getBottomTitle(value),
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 11,
+                                                    color: Colors.grey[600],
+                                                    fontWeight: FontWeight.w400,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
                                         ),
                                       ),
                                       rightTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                        sideTitles: SideTitles(
+                                          showTitles: false,
+                                        ),
                                       ),
                                       topTitles: const AxisTitles(
-                                        sideTitles: SideTitles(showTitles: false),
+                                        sideTitles: SideTitles(
+                                          showTitles: false,
+                                        ),
                                       ),
                                     ),
                                     borderData: FlBorderData(
                                       show: true,
                                       border: Border(
-                                        left: BorderSide(color: Colors.grey[300]!),
-                                        bottom: BorderSide(color: Colors.grey[300]!),
+                                        left: BorderSide(
+                                          color: Colors.grey[300]!,
+                                        ),
+                                        bottom: BorderSide(
+                                          color: Colors.grey[300]!,
+                                        ),
                                       ),
                                     ),
                                     lineBarsData: [
@@ -378,13 +449,14 @@ class _HistoryPageState extends State<HistoryPage> {
                                         barWidth: 3,
                                         dotData: FlDotData(
                                           show: true,
-                                          getDotPainter: (spot, percent, barData, index) =>
-                                              FlDotCirclePainter(
-                                            radius: 4,
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                            strokeColor: Colors.blue,
-                                          ),
+                                          getDotPainter:
+                                              (spot, percent, barData, index) =>
+                                                  FlDotCirclePainter(
+                                                    radius: 4,
+                                                    color: Colors.white,
+                                                    strokeWidth: 2,
+                                                    strokeColor: Colors.blue,
+                                                  ),
                                         ),
                                         belowBarData: BarAreaData(
                                           show: true,
@@ -430,11 +502,24 @@ class _HistoryPageState extends State<HistoryPage> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
                                   children: [
-                                    _buildStat("Average", "32 km/h", Icons.timeline),
-                                    _buildStat("Maximum", "45 km/h", Icons.keyboard_arrow_up),
-                                    _buildStat("Minimum", "18 km/h", Icons.keyboard_arrow_down),
+                                    _buildStat(
+                                      "Average",
+                                      "32 km/h",
+                                      Icons.timeline,
+                                    ),
+                                    _buildStat(
+                                      "Maximum",
+                                      "45 km/h",
+                                      Icons.keyboard_arrow_up,
+                                    ),
+                                    _buildStat(
+                                      "Minimum",
+                                      "18 km/h",
+                                      Icons.keyboard_arrow_down,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -462,11 +547,7 @@ class _HistoryPageState extends State<HistoryPage> {
             color: Colors.blue.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: Colors.blue,
-            size: 20,
-          ),
+          child: Icon(icon, color: Colors.blue, size: 20),
         ),
         const SizedBox(height: 8),
         Text(

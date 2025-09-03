@@ -4,6 +4,7 @@ import 'history.dart';
 import 'map.dart';
 import 'profile.dart';
 import 'notification.dart';
+
 class BottomNavBar extends StatefulWidget {
   const BottomNavBar({super.key});
 
@@ -18,9 +19,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
     HomePage(),
     HistoryPage(),
     MapPage(),
-    NotificationPage(), 
+    NotificationPage(),
     ProfilePage(),
-      
   ];
 
   @override
@@ -31,13 +31,16 @@ class _BottomNavBarState extends State<BottomNavBar> {
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,        
-        unselectedItemColor: Colors.grey,      
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_active_rounded), label: 'Notifications'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_active_rounded),
+            label: 'Notifications',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
