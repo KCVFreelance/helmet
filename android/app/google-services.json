@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1013766552572:android:8e21304e04e1f2d4da5079",
+        "mobilesdk_app_id": "1:1013766552572:android:c39cbd72ac8f6704da5079",
         "android_client_info": {
-          "package_name": "helmet.com"
+          "package_name": "com.example.flutter_application_1"
         }
       },
       "oauth_client": [],
