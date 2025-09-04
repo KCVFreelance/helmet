@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1013766552572",
+    "firebase_url": "https://helmet-858a5-default-rtdb.firebaseio.com",
+    "project_id": "helmet-858a5",
+    "storage_bucket": "helmet-858a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1013766552572:android:8e21304e04e1f2d4da5079",
+        "android_client_info": {
+          "package_name": "helmet.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmVVhzEmOEITQUCkoSlTMfG6FB8NpcL8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
