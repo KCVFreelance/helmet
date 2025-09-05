@@ -1,8 +1,273 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_database/firebase_database.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  String _firstName = "Loading...";
+  String _lastName = "";
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      // Get the user data from Firebase RTDB
+      // Assuming you want to fetch the first user (1-000)
+      final snapshot = await _database.child('1-000/accounts').get();
+
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          _firstName = data['fname'] ?? "User";
+          _lastName = data['lname'] ?? "";
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _firstName = "User";
+          _lastName = "Not Found";
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _firstName = "Error";
+        _lastName = "Loading User";
+        _isLoading = false;
+      });
+      print("Error fetching user data: $e");
+    }
+  }
+
+  Future<void> _updateUserData(String firstName, String lastName) async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await _database.child('1-000/accounts').update({
+        'fname': firstName,
+        'lname': lastName,
+      });
+
+      setState(() {
+        _firstName = firstName;
+        _lastName = lastName;
+        _isSaving = false;
+      });
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Profile updated successfully!',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isSaving = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to update profile. Please try again.',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+      print("Error updating user data: $e");
+    }
+  }
+
+  void _showEditDialog() {
+    _firstNameController.text = _firstName;
+    _lastNameController.text = _lastName;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Text(
+                'Edit Profile',
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              content: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: _firstNameController,
+                      decoration: InputDecoration(
+                        labelText: 'First Name',
+                        labelStyle: GoogleFonts.poppins(
+                          color: Colors.grey[600],
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.blue[600]!),
+                        ),
+                        prefixIcon: Icon(
+                          Icons.person_outline,
+                          color: Colors.grey[600],
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      style: GoogleFonts.poppins(),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'First name is required';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _lastNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Last Name',
+                        labelStyle: GoogleFonts.poppins(
+                          color: Colors.grey[600],
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.blue[600]!),
+                        ),
+                        prefixIcon: Icon(
+                          Icons.person_outline,
+                          color: Colors.grey[600],
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      style: GoogleFonts.poppins(),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Last name is required';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: _isSaving
+                      ? null
+                      : () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _isSaving
+                      ? null
+                      : () {
+                          if (_formKey.currentState!.validate()) {
+                            _updateUserData(
+                              _firstNameController.text.trim(),
+                              _lastNameController.text.trim(),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[600],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: _isSaving
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'Save',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,33 +305,6 @@ class ProfilePage extends StatelessWidget {
                       letterSpacing: 0.5,
                     ),
                   ),
-                  // Row(
-                  //   children: [
-                  //     Container(
-                  //       decoration: BoxDecoration(
-                  //         color: Colors.white.withOpacity(0.2),
-                  //         borderRadius: BorderRadius.circular(12),
-                  //       ),
-                  //       child: IconButton(
-                  //         onPressed: () {},
-                  //         icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                  //         iconSize: 22,
-                  //       ),
-                  //     ),
-                  //     const SizedBox(width: 8),
-                  //     Container(
-                  //       decoration: BoxDecoration(
-                  //         color: Colors.white.withOpacity(0.2),
-                  //         borderRadius: BorderRadius.circular(12),
-                  //       ),
-                  //       child: IconButton(
-                  //         onPressed: () {},
-                  //         icon: const Icon(Icons.menu, color: Colors.white),
-                  //         iconSize: 22,
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
                 ],
               ),
             ),
@@ -109,14 +347,28 @@ class ProfilePage extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            child: const CircleAvatar(
+                            child: CircleAvatar(
                               radius: 40,
                               backgroundColor: Colors.blue,
-                              child: Icon(
-                                Icons.person,
-                                size: 40,
-                                color: Colors.white,
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      _firstName.isNotEmpty
+                                          ? _firstName[0].toUpperCase()
+                                          : "U",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 20),
@@ -124,14 +376,25 @@ class ProfilePage extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "John Doe",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
+                                _isLoading
+                                    ? Container(
+                                        height: 24,
+                                        width: 150,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[300],
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                      )
+                                    : Text(
+                                        "$_firstName $_lastName".trim(),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[800],
+                                        ),
+                                      ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
@@ -177,8 +440,11 @@ class ProfilePage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: IconButton(
-                              icon: Icon(Icons.edit_outlined, color: Colors.blue[700]),
-                              onPressed: () {},
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                color: Colors.blue[700],
+                              ),
+                              onPressed: _isLoading ? null : _showEditDialog,
                             ),
                           ),
                         ],
@@ -248,7 +514,10 @@ class ProfilePage extends StatelessWidget {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.green[600],
                                   borderRadius: BorderRadius.circular(20),
@@ -314,7 +583,10 @@ class ProfilePage extends StatelessWidget {
                                         value: 0.85,
                                         minHeight: 12,
                                         backgroundColor: Colors.grey[300],
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green[600]!),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.green[600]!,
+                                            ),
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -401,7 +673,12 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -449,7 +726,14 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTripCard(String title, String date, String distance, String time, Color color, IconData icon) {
+  Widget _buildTripCard(
+    String title,
+    String date,
+    String distance,
+    String time,
+    Color color,
+    IconData icon,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
@@ -469,9 +753,7 @@ class ProfilePage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [color.withOpacity(0.8), color],
-              ),
+              gradient: LinearGradient(colors: [color.withOpacity(0.8), color]),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: Colors.white, size: 24),
@@ -492,7 +774,11 @@ class ProfilePage extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey[500]),
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 14,
+                      color: Colors.grey[500],
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       date,
@@ -528,7 +814,11 @@ class ProfilePage extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.access_time_outlined, size: 14, color: Colors.grey[500]),
+                  Icon(
+                    Icons.access_time_outlined,
+                    size: 14,
+                    color: Colors.grey[500],
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     time,

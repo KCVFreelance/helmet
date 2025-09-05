@@ -68,7 +68,7 @@ class _MapPageState extends State<MapPage> {
 
   // Listen for real-time changes to end location in Firebase RTDB
   void _listenToEndLocationFromFirebase() {
-    final dbRef = FirebaseDatabase.instance.ref('Coordinates');
+    final dbRef = FirebaseDatabase.instance.ref('1-000/coordinates');
     dbRef.onValue.listen((event) async {
       final snapshot = event.snapshot;
       if (snapshot.exists) {
