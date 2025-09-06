@@ -6,12 +6,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 
 
 import 'navBar.dart';
 import 'signin.dart';
 import 'signup.dart';
 import 'home.dart';
+
 
 const firebaseWebOptions = FirebaseOptions(
   apiKey: "AIzaSyBcWBAJ2lCy9wOFx-kONqoxkTO9ey0E9Us",
@@ -40,6 +44,7 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(MyApp());
+
   runApp(const MyApp());
 }
 
@@ -50,6 +55,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'My App',
+      theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
+
+
       title: 'My App',
       theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
 
