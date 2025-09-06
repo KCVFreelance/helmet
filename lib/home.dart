@@ -14,7 +14,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isStarted = false;
 
-  // Example coordinates, replace with your actual source
   double latitude = 14.5995; // Replace with actual latitude
   double longitude = 120.9842; // Replace with actual longitude
 

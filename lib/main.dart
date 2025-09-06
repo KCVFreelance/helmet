@@ -2,11 +2,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
+
 
 import 'navBar.dart';
 import 'signin.dart';
@@ -52,6 +55,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'My App',
+      theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
+
 
       title: 'My App',
       theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
@@ -75,6 +81,7 @@ class MyApp extends StatelessWidget {
           }
           if (snapshot.hasData) {
             return HomePage(); // already logged in
+
           }
           return SignIn(); // not logged in
         },
