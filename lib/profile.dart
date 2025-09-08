@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'signin.dart'; // Import to access UserSession
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -20,6 +21,8 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   bool _isSaving = false;
 
+  String? get _helmetId => UserSession.helmetId;
+
   @override
   void initState() {
     super.initState();
@@ -35,10 +38,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _fetchUserData() async {
     try {
-      // Get the user data from Firebase RTDB
-      // Assuming you want to fetch the first user (1-000)
-      final snapshot = await _database.child('1-000/accounts').get();
-
+      final helmetId = _helmetId;
+      if (helmetId == null) {
+        setState(() {
+          _firstName = "User";
+          _lastName = "Not Found";
+          _isLoading = false;
+        });
+        return;
+      }
+      // Get the user data from Firebase RTDB using helmetId
+      final snapshot = await _database.child('$helmetId/accounts').get();
       if (snapshot.exists) {
         final data = snapshot.value as Map<dynamic, dynamic>;
         setState(() {
@@ -67,19 +77,23 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _isSaving = true;
     });
-
     try {
-      await _database.child('1-000/accounts').update({
+      final helmetId = _helmetId;
+      if (helmetId == null) {
+        setState(() {
+          _isSaving = false;
+        });
+        return;
+      }
+      await _database.child('$helmetId/accounts').update({
         'fname': firstName,
         'lname': lastName,
       });
-
       setState(() {
         _firstName = firstName;
         _lastName = lastName;
         _isSaving = false;
       });
-
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -100,7 +114,6 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _isSaving = false;
       });
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

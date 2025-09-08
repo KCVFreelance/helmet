@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'navBar.dart';
+
+// Add a global session class to hold the current helmet ID
+class UserSession {
+  static String? helmetId;
+}
 
 class SignIn extends StatefulWidget {
   @override
@@ -15,23 +21,50 @@ class _SignInState extends State<SignIn> {
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-
+        // Search for helmet ID by email in the database
+        final dbRef = FirebaseDatabase.instance.ref();
+        final snapshot = await dbRef.get();
+        String? foundHelmetId;
+        Map<String, dynamic>? accountData;
+        for (final child in snapshot.children) {
+          final accounts = child.child('accounts');
+          if (accounts.exists) {
+            final data = Map<String, dynamic>.from(accounts.value as Map);
+            if (data['email'] == email) {
+              foundHelmetId = child.key;
+              accountData = data;
+              break;
+            }
+          }
+        }
+        if (foundHelmetId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Account not found for this email.')),
+          );
+          return;
+        }
+        if (accountData!['pass'] != password) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Incorrect password.')));
+          return;
+        }
+        // Store the helmetId in UserSession for later use
+        UserSession.helmetId = foundHelmetId;
+        // Navigate to the main app
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const BottomNavBar()),
         );
-
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Logged in as $email")));
-      } on FirebaseAuthException catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message ?? "Login failed")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Logged in as $email (Helmet ID: $foundHelmetId)"),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Login failed: ${e.toString()}")),
+        );
       }
     }
   }

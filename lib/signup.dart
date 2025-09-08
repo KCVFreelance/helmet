@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class SignUp extends StatefulWidget {
   @override
@@ -13,6 +14,7 @@ class _SignUpState extends State<SignUp> {
   String email = '';
   String password = '';
   String confirmPassword = '';
+  String helmetId = '';
 
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
@@ -28,6 +30,15 @@ class _SignUpState extends State<SignUp> {
           email: email,
           password: password,
         );
+
+        // Save user info to Realtime Database
+        final dbRef = FirebaseDatabase.instance.ref();
+        await dbRef.child(helmetId).child('accounts').set({
+          'email': email,
+          'fname': firstName,
+          'lname': lastName,
+          'pass': password,
+        });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Account created for $firstName $lastName")),
@@ -112,6 +123,12 @@ class _SignUpState extends State<SignUp> {
                         'Enter your information to register',
                         style: TextStyle(color: Colors.grey[600]),
                       ),
+                    ),
+                    SizedBox(height: 16),
+                    _buildTextField(
+                      label: 'Helmet ID',
+                      onChanged: (val) => helmetId = val,
+                      validator: (val) => val!.isEmpty ? 'Required' : null,
                     ),
                     SizedBox(height: 16),
                     Row(

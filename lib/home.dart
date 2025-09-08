@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'signin.dart'; // Import to access UserSession
 
 // Change HomePage to StatefulWidget to manage button state
 class HomePage extends StatefulWidget {
@@ -64,6 +65,8 @@ class _HomePageState extends State<HomePage> {
   void _stopTimer() {
     _timer?.cancel();
   }
+
+  String? get _helmetId => UserSession.helmetId;
 
   @override
   Widget build(BuildContext context) {
@@ -336,9 +339,11 @@ class _HomePageState extends State<HomePage> {
                                           }
                                         }
                                       });
+                                      final helmetId = _helmetId;
+                                      if (helmetId == null) return;
                                       // Fetch coordinates from RTDB
                                       final coordSnapshot = await _database
-                                          .child('1-000/coordinates')
+                                          .child('$helmetId/coordinates')
                                           .get();
                                       double lat = 0.0;
                                       double lng = 0.0;
@@ -359,7 +364,7 @@ class _HomePageState extends State<HomePage> {
                                       if (_isStarted) {
                                         // Start pressed
                                         await _database
-                                            .child('1-000/start')
+                                            .child('$helmetId/start')
                                             .update({
                                               'date': dateStr,
                                               'time': timeStr,
@@ -369,7 +374,7 @@ class _HomePageState extends State<HomePage> {
                                       } else {
                                         // Stop pressed
                                         await _database
-                                            .child('1-000/stop')
+                                            .child('$helmetId/stop')
                                             .update({
                                               'date': dateStr,
                                               'time': timeStr,

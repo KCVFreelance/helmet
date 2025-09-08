@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
+import 'signin.dart'; // Import to access UserSession
 
 class RouteOption {
   final String summary;
@@ -68,7 +69,10 @@ class _MapPageState extends State<MapPage> {
 
   // Listen for real-time changes to end location in Firebase RTDB
   void _listenToEndLocationFromFirebase() {
-    final dbRef = FirebaseDatabase.instance.ref('1-000/coordinates');
+    // Retrieve helmetId from UserSession or another appropriate source
+    final helmetId = UserSession.helmetId;
+    if (helmetId == null) return;
+    final dbRef = FirebaseDatabase.instance.ref('$helmetId/coordinates');
     dbRef.onValue.listen((event) async {
       final snapshot = event.snapshot;
       if (snapshot.exists) {

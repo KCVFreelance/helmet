@@ -113,7 +113,10 @@ class _NotificationPageState extends State<NotificationPage> {
                                 ),
                                 const SizedBox(width: 12),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.red,
                                     borderRadius: BorderRadius.circular(12),
@@ -135,7 +138,10 @@ class _NotificationPageState extends State<NotificationPage> {
                           onPressed: () {},
                           style: TextButton.styleFrom(
                             backgroundColor: Colors.blue[50],
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -171,37 +177,42 @@ class _NotificationPageState extends State<NotificationPage> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                          children: filters.map((filter) => 
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedFilter = filter;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                margin: const EdgeInsets.only(right: 4),
-                                decoration: BoxDecoration(
-                                  color: selectedFilter == filter
-                                      ? Colors.blue
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  filter,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: selectedFilter == filter
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: selectedFilter == filter
-                                        ? Colors.white
-                                        : Colors.grey[600],
+                          children: filters
+                              .map(
+                                (filter) => GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedFilter = filter;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    margin: const EdgeInsets.only(right: 4),
+                                    decoration: BoxDecoration(
+                                      color: selectedFilter == filter
+                                          ? Colors.blue
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      filter,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: selectedFilter == filter
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
+                                        color: selectedFilter == filter
+                                            ? Colors.white
+                                            : Colors.grey[600],
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                          ).toList(),
+                              )
+                              .toList(),
                         ),
                       ),
                     ),
@@ -216,7 +227,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           _buildSectionHeader("Today"),
                           _buildNotificationCard(
                             title: "Speed Limit Exceeded",
-                            description: "You exceeded the speed limit by 15 km/h on Highway 101",
+                            description:
+                                "You exceeded the speed limit by 15 km/h on Highway 101",
                             time: "2 hours ago",
                             icon: Icons.speed_outlined,
                             iconColor: Colors.red,
@@ -225,7 +237,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           ),
                           _buildNotificationCard(
                             title: "Trip Completed",
-                            description: "Your evening commute has been recorded - 8.5 km in 22 minutes",
+                            description:
+                                "Your evening commute has been recorded - 8.5 km in 22 minutes",
                             time: "4 hours ago",
                             icon: Icons.check_circle_outline,
                             iconColor: Colors.green,
@@ -234,7 +247,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           ),
                           _buildNotificationCard(
                             title: "Safety Score Updated",
-                            description: "Your safety score improved to 85/100. Keep up the good driving!",
+                            description:
+                                "Your safety score improved to 85/100. Keep up the good driving!",
                             time: "6 hours ago",
                             icon: Icons.shield_outlined,
                             iconColor: Colors.blue,
@@ -248,7 +262,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           _buildSectionHeader("Yesterday"),
                           _buildNotificationCard(
                             title: "System Update Available",
-                            description: "A new version of Topshield is available with improved features",
+                            description:
+                                "A new version of Topshield is available with improved features",
                             time: "1 day ago",
                             icon: Icons.system_update_outlined,
                             iconColor: Colors.orange,
@@ -257,7 +272,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           ),
                           _buildNotificationCard(
                             title: "Weekly Summary Ready",
-                            description: "Your weekly driving report is ready. Total distance: 85 km",
+                            description:
+                                "Your weekly driving report is ready. Total distance: 85 km",
                             time: "1 day ago",
                             icon: Icons.assessment_outlined,
                             iconColor: Colors.purple,
@@ -271,7 +287,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           _buildSectionHeader("This Week"),
                           _buildNotificationCard(
                             title: "Parking Location Saved",
-                            description: "Your vehicle location has been saved at SM Mall of Asia",
+                            description:
+                                "Your vehicle location has been saved at SM Mall of Asia",
                             time: "3 days ago",
                             icon: Icons.local_parking_outlined,
                             iconColor: Colors.green,
@@ -280,7 +297,8 @@ class _NotificationPageState extends State<NotificationPage> {
                           ),
                           _buildNotificationCard(
                             title: "Speed Alert Settings",
-                            description: "Speed alert notifications have been enabled for your safety",
+                            description:
+                                "Speed alert notifications have been enabled for your safety",
                             time: "5 days ago",
                             icon: Icons.notifications_active_outlined,
                             iconColor: Colors.blue,
@@ -330,7 +348,7 @@ class _NotificationPageState extends State<NotificationPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: isUnread 
+        border: isUnread
             ? Border.all(color: Colors.blue[200]!, width: 1)
             : null,
         boxShadow: [
@@ -362,9 +380,9 @@ class _NotificationPageState extends State<NotificationPage> {
                   ),
                   child: Icon(icon, color: Colors.white, size: 20),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Content
                 Expanded(
                   child: Column(
@@ -377,7 +395,9 @@ class _NotificationPageState extends State<NotificationPage> {
                               title,
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
-                                fontWeight: isUnread ? FontWeight.w600 : FontWeight.w500,
+                                fontWeight: isUnread
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
                                 color: Colors.grey[800],
                               ),
                             ),
@@ -393,9 +413,9 @@ class _NotificationPageState extends State<NotificationPage> {
                             ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 6),
-                      
+
                       Text(
                         description,
                         style: GoogleFonts.poppins(
@@ -406,14 +426,17 @@ class _NotificationPageState extends State<NotificationPage> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      
+
                       const SizedBox(height: 12),
-                      
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: iconColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
