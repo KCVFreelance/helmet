@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -25,6 +26,14 @@ class _HomePageState extends State<HomePage> {
   DateTime? _stopTime;
   Timer? _timer;
   Duration _currentDuration = Duration.zero;
+
+  // Add variables to store start and stop coordinates
+  double? _startLatitude;
+  double? _startLongitude;
+  double? _stopLatitude;
+  double? _stopLongitude;
+
+  double _currentSpeed = 0.0;
 
   @override
   void dispose() {
@@ -68,6 +77,168 @@ class _HomePageState extends State<HomePage> {
 
   String? get _helmetId => UserSession.helmetId;
 
+  // Function to calculate distance between two coordinates using Haversine formula
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
+    const double earthRadius = 6371; // Earth's radius in kilometers
+
+    double dLat = _degreesToRadians(lat2 - lat1);
+    double dLon = _degreesToRadians(lon2 - lon1);
+
+    double a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) *
+            math.cos(_degreesToRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c; // Distance in kilometers
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * (math.pi / 180);
+  }
+
+  // Function to determine time period (Morning or Evening)
+  String _getTimePeriod(DateTime dateTime) {
+    int hour = dateTime.hour;
+    if (hour >= 16 && hour <= 23) {
+      return 'evening';
+    } else {
+      return 'morning';
+    }
+  }
+
+  // Function to save trip data to recentTrips
+  Future<void> _saveTripData() async {
+    final helmetId = _helmetId;
+    if (helmetId == null ||
+        _startTime == null ||
+        _stopTime == null ||
+        _startLatitude == null ||
+        _startLongitude == null ||
+        _stopLatitude == null ||
+        _stopLongitude == null) {
+      return;
+    }
+
+    // Calculate travel time in minutes (stop time minus start time)
+    final travelTimeMinutes = _stopTime!.difference(_startTime!).inMinutes;
+
+    // Calculate travel distance in kilometers
+    final travelDistance = _calculateDistance(
+      _startLatitude!,
+      _startLongitude!,
+      _stopLatitude!,
+      _stopLongitude!,
+    );
+
+    // Determine time period based on start time
+    final timePeriod = _getTimePeriod(_startTime!);
+
+    // Format date as MM-DD-YYYY
+    final dateStr =
+        "${_startTime!.month.toString().padLeft(2, '0')}-${_startTime!.day.toString().padLeft(2, '0')}-${_startTime!.year}";
+
+    // Save to recentTrips
+    try {
+      await _database.child('$helmetId/recentTrips/$timePeriod').set({
+        'date': dateStr, // MM-DD-YYYY format
+        'distance': travelDistance.toStringAsFixed(
+          2,
+        ), // Distance in km with 2 decimal places
+        'tTime':
+            travelTimeMinutes, // Travel time in minutes (stop time - start time)
+      });
+    } catch (e) {
+      print('Error saving trip data: $e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTripState();
+    _loadCurrentSpeed();
+  }
+
+  Future<void> _loadTripState() async {
+    final helmetId = _helmetId;
+    if (helmetId == null) return;
+    try {
+      final startSnap = await _database.child('$helmetId/start').get();
+      final stopSnap = await _database.child('$helmetId/stop').get();
+      DateTime? startTime;
+      DateTime? stopTime;
+      if (startSnap.exists && startSnap.value is Map) {
+        final data = startSnap.value as Map;
+        if (data['date'] != null && data['time'] != null) {
+          startTime = DateTime.tryParse('${data['date']}T${data['time']}');
+        }
+      }
+      if (stopSnap.exists && stopSnap.value is Map) {
+        final data = stopSnap.value as Map;
+        if (data['date'] != null && data['time'] != null) {
+          stopTime = DateTime.tryParse('${data['date']}T${data['time']}');
+        }
+      }
+      bool started = false;
+      if (startTime != null &&
+          (stopTime == null || startTime.isAfter(stopTime))) {
+        started = true;
+      }
+      setState(() {
+        _isStarted = started;
+        _startTime = started ? startTime : null;
+        _stopTime = started ? null : stopTime;
+        _currentDuration = started && _startTime != null
+            ? DateTime.now().difference(_startTime!)
+            : Duration.zero;
+      });
+      if (started) _startTimer();
+    } catch (_) {}
+  }
+
+  Future<void> _loadCurrentSpeed() async {
+    final helmetId = _helmetId;
+    if (helmetId == null) return;
+    try {
+      final coordSnapshot = await _database
+          .child('$helmetId/coordinates')
+          .get();
+      if (coordSnapshot.exists) {
+        final coordData = coordSnapshot.value as Map<dynamic, dynamic>;
+        final cSpeed = coordData['cSpeed'];
+        double speed = 0.0;
+        if (cSpeed is double)
+          speed = cSpeed;
+        else if (cSpeed is int)
+          speed = cSpeed.toDouble();
+        else if (cSpeed is String)
+          speed = double.tryParse(cSpeed) ?? 0.0;
+        setState(() {
+          _currentSpeed = speed;
+        });
+      }
+    } catch (_) {
+      setState(() {
+        _currentSpeed = 0.0;
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadTripState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,33 +281,6 @@ class _HomePageState extends State<HomePage> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    // Row(
-                    //   children: [
-                    //     Container(
-                    //       decoration: BoxDecoration(
-                    //         color: Colors.white.withOpacity(0.2),
-                    //         borderRadius: BorderRadius.circular(12),
-                    //       ),
-                    //       child: IconButton(
-                    //         onPressed: () {},
-                    //         icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                    //         iconSize: 22,
-                    //       ),
-                    //     ),
-                    //     const SizedBox(width: 8),
-                    //     Container(
-                    //       decoration: BoxDecoration(
-                    //         color: Colors.white.withOpacity(0.2),
-                    //         borderRadius: BorderRadius.circular(12),
-                    //       ),
-                    //       child: IconButton(
-                    //         onPressed: () {},
-                    //         icon: const Icon(Icons.menu, color: Colors.white),
-                    //         iconSize: 22,
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
                   ],
                 ),
               ),
@@ -297,7 +441,8 @@ class _HomePageState extends State<HomePage> {
                                 icon: Icons.speed_outlined,
                                 iconColor: Colors.blue,
                                 label: "Current Speed",
-                                value: "32 km/h",
+                                value:
+                                    "${_currentSpeed.toStringAsFixed(1)} km/h",
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -322,25 +467,9 @@ class _HomePageState extends State<HomePage> {
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     onPressed: () async {
-                                      setState(() {
-                                        _isStarted = !_isStarted;
-                                        if (_isStarted) {
-                                          _startTime = DateTime.now();
-                                          _stopTime = null;
-                                          _currentDuration = Duration.zero;
-                                          _startTimer();
-                                        } else {
-                                          _stopTime = DateTime.now();
-                                          _stopTimer();
-                                          if (_startTime != null &&
-                                              _stopTime != null) {
-                                            _currentDuration = _stopTime!
-                                                .difference(_startTime!);
-                                          }
-                                        }
-                                      });
                                       final helmetId = _helmetId;
                                       if (helmetId == null) return;
+
                                       // Fetch coordinates from RTDB
                                       final coordSnapshot = await _database
                                           .child('$helmetId/coordinates')
@@ -351,21 +480,57 @@ class _HomePageState extends State<HomePage> {
                                         final coordData =
                                             coordSnapshot.value
                                                 as Map<dynamic, dynamic>;
-                                        lat = (coordData['latitude'] ?? 0)
-                                            .toDouble();
-                                        lng = (coordData['longitude'] ?? 0)
-                                            .toDouble();
+                                        final rawLat = coordData['latitude'];
+                                        final rawLng = coordData['longitude'];
+                                        if (rawLat is double) {
+                                          lat = rawLat;
+                                        } else if (rawLat is int) {
+                                          lat = rawLat.toDouble();
+                                        } else if (rawLat is String) {
+                                          lat = double.tryParse(rawLat) ?? 0.0;
+                                        }
+                                        if (rawLng is double) {
+                                          lng = rawLng;
+                                        } else if (rawLng is int) {
+                                          lng = rawLng.toDouble();
+                                        } else if (rawLng is String) {
+                                          lng = double.tryParse(rawLng) ?? 0.0;
+                                        }
                                       }
+
+                                      setState(() {
+                                        _isStarted = !_isStarted;
+                                        if (_isStarted) {
+                                          _startTime = DateTime.now();
+                                          _stopTime = null;
+                                          _currentDuration = Duration.zero;
+                                          _startLatitude = lat;
+                                          _startLongitude = lng;
+                                          _startTimer();
+                                        } else {
+                                          _stopTime = DateTime.now();
+                                          _stopLatitude = lat;
+                                          _stopLongitude = lng;
+                                          _stopTimer();
+                                          if (_startTime != null &&
+                                              _stopTime != null) {
+                                            _currentDuration = _stopTime!
+                                                .difference(_startTime!);
+                                          }
+                                        }
+                                      });
+
                                       final now = DateTime.now();
                                       final dateStr =
                                           "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
                                       final timeStr =
                                           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
                                       if (_isStarted) {
                                         // Start pressed
                                         await _database
                                             .child('$helmetId/start')
-                                            .update({
+                                            .set({
                                               'date': dateStr,
                                               'time': timeStr,
                                               'latitude': lat,
@@ -375,12 +540,15 @@ class _HomePageState extends State<HomePage> {
                                         // Stop pressed
                                         await _database
                                             .child('$helmetId/stop')
-                                            .update({
+                                            .set({
                                               'date': dateStr,
                                               'time': timeStr,
                                               'latitude': lat,
                                               'longitude': lng,
                                             });
+
+                                        // Calculate and save trip data
+                                        await _saveTripData();
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(

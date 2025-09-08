@@ -33,11 +33,15 @@ class _SignUpState extends State<SignUp> {
 
         // Save user info to Realtime Database
         final dbRef = FirebaseDatabase.instance.ref();
+        final now = DateTime.now();
+        final createdDate =
+            "${now.month.toString().padLeft(2, '0')}-${now.year}";
         await dbRef.child(helmetId).child('accounts').set({
           'email': email,
           'fname': firstName,
           'lname': lastName,
           'pass': password,
+          'createdDate': createdDate,
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
