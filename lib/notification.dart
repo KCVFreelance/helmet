@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -10,16 +11,114 @@ class NotificationPage extends StatefulWidget {
 
 class _NotificationPageState extends State<NotificationPage> {
   String selectedFilter = "All";
-  final List<String> filters = ["All", "Safety", "System", "Trip", "Alert"];
+  final List<String> filters = ["All", "Safety", "Trip", "Alert"];
+
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
+  List<Map<String, dynamic>> notifications = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  // Helper to parse the "time" string into DateTime for sorting
+  DateTime _parseTime(String time) {
+    try {
+      return DateTime.parse(time); // works if format is "yyyy-MM-dd HH:mm"
+    } catch (e) {
+      return DateTime.now(); // fallback
+    }
+  }
+
+  void _loadNotifications() {
+    // Listen for alerts
+    _dbRef.child("1-000/alert").onValue.listen((event) {
+      final data = event.snapshot.value as Map?;
+      if (data != null) {
+        List<Map<String, dynamic>> temp = [];
+
+        data.forEach((date, alertTypes) {
+          (alertTypes as Map).forEach((type, times) {
+            (times as Map).forEach((time, value) {
+              if (type == "lidar") {
+                temp.add({
+                  "title": "Safety Alert",
+                  "description": "Vehicle detected close by. Drive carefully.",
+                  "time": "$date $time",
+                  "icon": Icons.car_crash_outlined,
+                  "iconColor": Colors.red,
+                  "type": "Safety",
+                });
+              } else if (type == "oSpeed") {
+                temp.add({
+                  "title": "Overspeeding",
+                  "description": "You exceeded the speed limit.",
+                  "time": "$date $time",
+                  "icon": Icons.speed_outlined,
+                  "iconColor": Colors.orange,
+                  "type": "Alert",
+                });
+              }
+            });
+          });
+        });
+
+        setState(() {
+          notifications.addAll(temp);
+          // Sort newest → oldest
+          notifications.sort((a, b) {
+            return _parseTime(b["time"]).compareTo(_parseTime(a["time"]));
+          });
+        });
+      }
+    });
+
+    // Listen for recentTrips
+    _dbRef.child("1-000/recentTrips").onValue.listen((event) {
+      final data = event.snapshot.value as Map?;
+      if (data != null) {
+        List<Map<String, dynamic>> temp = [];
+        data.forEach((period, trip) {
+          if (trip["distance"].toString() != "0.00") {
+            temp.add({
+              "title": "Trip Completed",
+              "description":
+                  "Your $period trip has been recorded - ${trip["distance"]} km in ${trip["tTime"]} minutes",
+              "time": trip["date"] ?? "",
+              "icon": Icons.directions_car,
+              "iconColor": Colors.green,
+              "type": "Trip",
+            });
+          }
+        });
+
+        if (temp.isNotEmpty) {
+          setState(() {
+            notifications.addAll(temp);
+            // Sort newest → oldest
+            notifications.sort((a, b) {
+              return _parseTime(b["time"]).compareTo(_parseTime(a["time"]));
+            });
+          });
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Apply filter
+    final filteredNotifications = notifications.where((notif) {
+      return selectedFilter == "All" || notif["type"] == selectedFilter;
+    }).toList();
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: Column(
           children: [
-            // Top App Bar
+            // Top Bar
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -27,13 +126,6 @@ class _NotificationPageState extends State<NotificationPage> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
@@ -45,290 +137,88 @@ class _NotificationPageState extends State<NotificationPage> {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 24,
-                      letterSpacing: 0.5,
                     ),
                   ),
-                  // Row(
-                  //   children: [
-                  //     Container(
-                  //       decoration: BoxDecoration(
-                  //         color: Colors.white.withOpacity(0.2),
-                  //         borderRadius: BorderRadius.circular(12),
-                  //       ),
-                  //       child: IconButton(
-                  //         onPressed: () {},
-                  //         icon: const Icon(Icons.mark_email_read_outlined, color: Colors.white),
-                  //         iconSize: 22,
-                  //       ),
-                  //     ),
-                  //     const SizedBox(width: 8),
-                  //     Container(
-                  //       decoration: BoxDecoration(
-                  //         color: Colors.white.withOpacity(0.2),
-                  //         borderRadius: BorderRadius.circular(12),
-                  //       ),
-                  //       child: IconButton(
-                  //         onPressed: () {},
-                  //         icon: const Icon(Icons.settings_outlined, color: Colors.white),
-                  //         iconSize: 22,
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        notifications.clear();
+                      });
+                    },
+                    child: Text(
+                      "Clear All",
+                      style: GoogleFonts.poppins(color: Colors.white),
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            // Main Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with unread count
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Stay Updated",
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Text(
-                                  "Recent Activity",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    "3",
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.blue[50],
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            "Clear All",
-                            style: GoogleFonts.poppins(
-                              color: Colors.blue[700],
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Filter Tabs
-                    Container(
-                      padding: const EdgeInsets.all(4),
+            // Filter Tabs
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: filters.map((filter) {
+                  final bool isSelected = selectedFilter == filter;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedFilter = filter;
+                      });
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        color: isSelected ? Colors.blue : Colors.grey[200],
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: filters
-                              .map(
-                                (filter) => GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      selectedFilter = filter;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    margin: const EdgeInsets.only(right: 4),
-                                    decoration: BoxDecoration(
-                                      color: selectedFilter == filter
-                                          ? Colors.blue
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      filter,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        fontWeight: selectedFilter == filter
-                                            ? FontWeight.w600
-                                            : FontWeight.w500,
-                                        color: selectedFilter == filter
-                                            ? Colors.white
-                                            : Colors.grey[600],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
+                      child: Text(
+                        filter,
+                        style: GoogleFonts.poppins(
+                          color: isSelected ? Colors.white : Colors.black87,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
                       ),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Notifications List
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          // Today Section
-                          _buildSectionHeader("Today"),
-                          _buildNotificationCard(
-                            title: "Speed Limit Exceeded",
-                            description:
-                                "You exceeded the speed limit by 15 km/h on Highway 101",
-                            time: "2 hours ago",
-                            icon: Icons.speed_outlined,
-                            iconColor: Colors.red,
-                            isUnread: true,
-                            type: "Alert",
-                          ),
-                          _buildNotificationCard(
-                            title: "Trip Completed",
-                            description:
-                                "Your evening commute has been recorded - 8.5 km in 22 minutes",
-                            time: "4 hours ago",
-                            icon: Icons.check_circle_outline,
-                            iconColor: Colors.green,
-                            isUnread: true,
-                            type: "Trip",
-                          ),
-                          _buildNotificationCard(
-                            title: "Safety Score Updated",
-                            description:
-                                "Your safety score improved to 85/100. Keep up the good driving!",
-                            time: "6 hours ago",
-                            icon: Icons.shield_outlined,
-                            iconColor: Colors.blue,
-                            isUnread: true,
-                            type: "Safety",
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Yesterday Section
-                          _buildSectionHeader("Yesterday"),
-                          _buildNotificationCard(
-                            title: "System Update Available",
-                            description:
-                                "A new version of Topshield is available with improved features",
-                            time: "1 day ago",
-                            icon: Icons.system_update_outlined,
-                            iconColor: Colors.orange,
-                            isUnread: false,
-                            type: "System",
-                          ),
-                          _buildNotificationCard(
-                            title: "Weekly Summary Ready",
-                            description:
-                                "Your weekly driving report is ready. Total distance: 85 km",
-                            time: "1 day ago",
-                            icon: Icons.assessment_outlined,
-                            iconColor: Colors.purple,
-                            isUnread: false,
-                            type: "Trip",
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // This Week Section
-                          _buildSectionHeader("This Week"),
-                          _buildNotificationCard(
-                            title: "Parking Location Saved",
-                            description:
-                                "Your vehicle location has been saved at SM Mall of Asia",
-                            time: "3 days ago",
-                            icon: Icons.local_parking_outlined,
-                            iconColor: Colors.green,
-                            isUnread: false,
-                            type: "System",
-                          ),
-                          _buildNotificationCard(
-                            title: "Speed Alert Settings",
-                            description:
-                                "Speed alert notifications have been enabled for your safety",
-                            time: "5 days ago",
-                            icon: Icons.notifications_active_outlined,
-                            iconColor: Colors.blue,
-                            isUnread: false,
-                            type: "Safety",
-                          ),
-
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                }).toList(),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        title,
-        style: GoogleFonts.poppins(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Colors.grey[700],
+            // Notifications
+            Expanded(
+              child: filteredNotifications.isEmpty
+                  ? Center(
+                      child: Text(
+                        "No notifications yet",
+                        style: GoogleFonts.poppins(color: Colors.grey[600]),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredNotifications.length,
+                      itemBuilder: (context, index) {
+                        final notif = filteredNotifications[index];
+                        return _buildNotificationCard(
+                          title: notif["title"],
+                          description: notif["description"],
+                          time: notif["time"],
+                          icon: notif["icon"],
+                          iconColor: notif["iconColor"],
+                          isUnread: true,
+                          type: notif["type"],
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );
