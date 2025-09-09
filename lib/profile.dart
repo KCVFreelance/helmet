@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -29,25 +30,119 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _eveningTrip;
 
   int _alertCount = 0;
+  double _totalDistance = 0.0;
+
+  StreamSubscription<DatabaseEvent>? _coordSubscription;
+  StreamSubscription<DatabaseEvent>? _alertSubscription;
 
   @override
   void initState() {
     super.initState();
+    _listenToUserData();
     _fetchUserData();
   }
 
   @override
   void dispose() {
+    _coordSubscription?.cancel();
+    _alertSubscription?.cancel();
     _firstNameController.dispose();
     _lastNameController.dispose();
     super.dispose();
+  }
+
+  void _listenToUserData() {
+    final helmetId = _helmetId;
+    if (helmetId == null) return;
+    // Listen for coordinates changes
+    _coordSubscription = _database
+        .child('$helmetId/coordinates')
+        .onValue
+        .listen((event) {
+          double totalDistance = 0.0;
+          if (event.snapshot.exists) {
+            final coordData = Map<String, dynamic>.from(
+              event.snapshot.value as Map,
+            );
+            for (final dateEntry in coordData.values) {
+              if (dateEntry is Map) {
+                for (final timeEntry in dateEntry.values) {
+                  if (timeEntry is Map && timeEntry['tDistance'] != null) {
+                    final tDist = timeEntry['tDistance'];
+                    if (tDist is double)
+                      totalDistance += tDist;
+                    else if (tDist is int)
+                      totalDistance += tDist.toDouble();
+                    else if (tDist is String)
+                      totalDistance += double.tryParse(tDist) ?? 0.0;
+                  }
+                }
+              }
+            }
+          }
+          setState(() {
+            _totalDistance = totalDistance;
+          });
+        });
+    // Listen for alert changes
+    _alertSubscription = _database.child('$helmetId/alert').onValue.listen((
+      event,
+    ) {
+      int alertCount = 0;
+      if (event.snapshot.exists) {
+        final alertData = Map<String, dynamic>.from(
+          event.snapshot.value as Map,
+        );
+        for (final dateEntry in alertData.values) {
+          if (dateEntry is Map) {
+            if (dateEntry['lidar'] is Map) {
+              final lidar = Map<String, dynamic>.from(dateEntry['lidar']);
+              alertCount += lidar.values.where((v) => v == 1).length;
+            }
+            if (dateEntry['oSpeed'] is Map) {
+              final oSpeed = Map<String, dynamic>.from(dateEntry['oSpeed']);
+              alertCount += oSpeed.values.where((v) => v == 1).length;
+            }
+          }
+        }
+      }
+      setState(() {
+        _alertCount = alertCount;
+      });
+    });
   }
 
   Future<void> _fetchUserData() async {
     try {
       final helmetId = _helmetId;
       int alertCount = 0;
+      double totalDistance = 0.0;
       if (helmetId != null) {
+        // Fetch all tDistance from coordinates
+        final coordSnapshot = await _database
+            .child('$helmetId/coordinates')
+            .get();
+        if (coordSnapshot.exists) {
+          final coordData = Map<String, dynamic>.from(
+            coordSnapshot.value as Map,
+          );
+          for (final dateEntry in coordData.values) {
+            if (dateEntry is Map) {
+              for (final timeEntry in dateEntry.values) {
+                if (timeEntry is Map && timeEntry['tDistance'] != null) {
+                  final tDist = timeEntry['tDistance'];
+                  if (tDist is double)
+                    totalDistance += tDist;
+                  else if (tDist is int)
+                    totalDistance += tDist.toDouble();
+                  else if (tDist is String)
+                    totalDistance += double.tryParse(tDist) ?? 0.0;
+                }
+              }
+            }
+          }
+        }
+        // Alerts logic
         final alertSnapshot = await _database.child('$helmetId/alert').get();
         if (alertSnapshot.exists) {
           final alertData = Map<String, dynamic>.from(
@@ -55,12 +150,10 @@ class _ProfilePageState extends State<ProfilePage> {
           );
           for (final dateEntry in alertData.values) {
             if (dateEntry is Map) {
-              // lidar
               if (dateEntry['lidar'] is Map) {
                 final lidar = Map<String, dynamic>.from(dateEntry['lidar']);
                 alertCount += lidar.values.where((v) => v == 1).length;
               }
-              // oSpeed
               if (dateEntry['oSpeed'] is Map) {
                 final oSpeed = Map<String, dynamic>.from(dateEntry['oSpeed']);
                 alertCount += oSpeed.values.where((v) => v == 1).length;
@@ -68,46 +161,52 @@ class _ProfilePageState extends State<ProfilePage> {
             }
           }
         }
-      }
-      // Get the user data from Firebase RTDB using helmetId
-      final snapshot = helmetId != null
-          ? await _database.child('$helmetId/accounts').get()
-          : null;
-      Map<String, dynamic>? morningTrip;
-      Map<String, dynamic>? eveningTrip;
-      final tripsSnapshot = helmetId != null
-          ? await _database.child('$helmetId/recentTrips').get()
-          : null;
-      if (tripsSnapshot != null && tripsSnapshot.exists) {
-        final tripsData = Map<String, dynamic>.from(tripsSnapshot.value as Map);
-        if (tripsData['morning'] != null) {
-          morningTrip = Map<String, dynamic>.from(tripsData['morning'] as Map);
+        // Get user data
+        final snapshot = await _database.child('$helmetId/accounts').get();
+        Map<String, dynamic>? morningTrip;
+        Map<String, dynamic>? eveningTrip;
+        final tripsSnapshot = await _database
+            .child('$helmetId/recentTrips')
+            .get();
+        if (tripsSnapshot.exists) {
+          final tripsData = Map<String, dynamic>.from(
+            tripsSnapshot.value as Map,
+          );
+          if (tripsData['morning'] != null) {
+            morningTrip = Map<String, dynamic>.from(
+              tripsData['morning'] as Map,
+            );
+          }
+          if (tripsData['evening'] != null) {
+            eveningTrip = Map<String, dynamic>.from(
+              tripsData['evening'] as Map,
+            );
+          }
         }
-        if (tripsData['evening'] != null) {
-          eveningTrip = Map<String, dynamic>.from(tripsData['evening'] as Map);
+        if (snapshot.exists) {
+          final data = snapshot.value as Map<dynamic, dynamic>;
+          setState(() {
+            _firstName = data['fname'] ?? "User";
+            _lastName = data['lname'] ?? "";
+            _createdDate = data['createdDate'] ?? "";
+            _morningTrip = morningTrip;
+            _eveningTrip = eveningTrip;
+            _alertCount = alertCount;
+            _totalDistance = totalDistance;
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _firstName = "User";
+            _lastName = "Not Found";
+            _createdDate = "";
+            _morningTrip = morningTrip;
+            _eveningTrip = eveningTrip;
+            _alertCount = alertCount;
+            _totalDistance = totalDistance;
+            _isLoading = false;
+          });
         }
-      }
-      if (snapshot != null && snapshot.exists) {
-        final data = snapshot.value as Map<dynamic, dynamic>;
-        setState(() {
-          _firstName = data['fname'] ?? "User";
-          _lastName = data['lname'] ?? "";
-          _createdDate = data['createdDate'] ?? "";
-          _morningTrip = morningTrip;
-          _eveningTrip = eveningTrip;
-          _alertCount = alertCount;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _firstName = "User";
-          _lastName = "Not Found";
-          _createdDate = "";
-          _morningTrip = morningTrip;
-          _eveningTrip = eveningTrip;
-          _alertCount = alertCount;
-          _isLoading = false;
-        });
       }
     } catch (e) {
       setState(() {
@@ -117,6 +216,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _morningTrip = null;
         _eveningTrip = null;
         _alertCount = 0;
+        _totalDistance = 0.0;
         _isLoading = false;
       });
       print("Error fetching user data: $e");
@@ -414,14 +514,14 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Color(0xFFF8FAFD),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Info Card (restored to top)
+              // Profile Info Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -554,26 +654,20 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 24),
 
-              // Statistics Row
+              // Statistics Row with improved design
               Row(
                 children: [
                   Expanded(
                     child: _buildStatCard(
                       "Total Distance",
-                      "1,200 km",
+                      _isLoading
+                          ? "..."
+                          : "${_totalDistance.toStringAsFixed(2)} km",
                       Icons.route_outlined,
                       Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      "Incidents",
-                      "2",
-                      Icons.warning_outlined,
-                      Colors.orange,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -590,7 +684,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 24),
 
-              // Safety Score Card
+              // Safety Score Card with enhanced design
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -711,7 +805,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 24),
 
-              // Recent Trips Section
+              // Recent Trips Section with improved header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -766,6 +860,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Updated stat card design
   Widget _buildStatCard(
     String title,
     String value,
@@ -819,6 +914,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Updated trip card design
   Widget _buildTripCard(
     String title,
     String date,

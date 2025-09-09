@@ -15,6 +15,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool _isStarted = false;
+  String _userName = ""; // Add this line for user's name
 
   double latitude = 14.5995; // Replace with actual latitude
   double longitude = 120.9842; // Replace with actual longitude
@@ -34,11 +35,39 @@ class _HomePageState extends State<HomePage> {
   double? _stopLongitude;
 
   double _currentSpeed = 0.0;
+  StreamSubscription<DatabaseEvent>? _coordSubscription;
+
+  // Removed duplicate initState
 
   @override
   void dispose() {
+    _coordSubscription?.cancel();
     _timer?.cancel();
     super.dispose();
+  }
+
+  void _listenToCurrentSpeed() {
+    final helmetId = _helmetId;
+    if (helmetId == null) return;
+    _coordSubscription = _database
+        .child('$helmetId/coordinates')
+        .onValue
+        .listen((event) {
+          if (event.snapshot.exists) {
+            final coordData = event.snapshot.value as Map<dynamic, dynamic>;
+            final cSpeed = coordData['cSpeed'];
+            double speed = 0.0;
+            if (cSpeed is double)
+              speed = cSpeed;
+            else if (cSpeed is int)
+              speed = cSpeed.toDouble();
+            else if (cSpeed is String)
+              speed = double.tryParse(cSpeed) ?? 0.0;
+            setState(() {
+              _currentSpeed = speed;
+            });
+          }
+        });
   }
 
   String get _travelTimeDisplay {
@@ -156,6 +185,12 @@ class _HomePageState extends State<HomePage> {
         'tTime':
             travelTimeMinutes, // Travel time in minutes (stop time - start time)
       });
+      // Also save distance to coordinates/{date}/{time}/tDistance
+      final timeKey =
+          "${_stopTime!.hour.toString().padLeft(2, '0')}:${_stopTime!.minute.toString().padLeft(2, '0')}";
+      await _database
+          .child('$helmetId/coordinates/$dateStr/$timeKey/tDistance')
+          .set(travelDistance.toStringAsFixed(2));
     } catch (e) {
       print('Error saving trip data: $e');
     }
@@ -165,7 +200,23 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadTripState();
-    _loadCurrentSpeed();
+    _listenToCurrentSpeed();
+    _loadUserName(); // Add this line
+  }
+
+  // Add this function to load user name
+  Future<void> _loadUserName() async {
+    final helmetId = _helmetId;
+    if (helmetId == null) return;
+    try {
+      final snapshot = await _database.child('$helmetId/accounts').get();
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          _userName = data['fname'] ?? "";
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadTripState() async {
@@ -203,34 +254,6 @@ class _HomePageState extends State<HomePage> {
       });
       if (started) _startTimer();
     } catch (_) {}
-  }
-
-  Future<void> _loadCurrentSpeed() async {
-    final helmetId = _helmetId;
-    if (helmetId == null) return;
-    try {
-      final coordSnapshot = await _database
-          .child('$helmetId/coordinates')
-          .get();
-      if (coordSnapshot.exists) {
-        final coordData = coordSnapshot.value as Map<dynamic, dynamic>;
-        final cSpeed = coordData['cSpeed'];
-        double speed = 0.0;
-        if (cSpeed is double)
-          speed = cSpeed;
-        else if (cSpeed is int)
-          speed = cSpeed.toDouble();
-        else if (cSpeed is String)
-          speed = double.tryParse(cSpeed) ?? 0.0;
-        setState(() {
-          _currentSpeed = speed;
-        });
-      }
-    } catch (_) {
-      setState(() {
-        _currentSpeed = 0.0;
-      });
-    }
   }
 
   @override
@@ -298,7 +321,7 @@ class _HomePageState extends State<HomePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Welcome back",
+                            "Welcome back, $_userName!",
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               color: Colors.grey[600],
