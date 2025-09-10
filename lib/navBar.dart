@@ -15,16 +15,23 @@ class BottomNavBar extends StatefulWidget {
 class _BottomNavBarState extends State<BottomNavBar> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomePage(),
-    HistoryPage(),
-    MapPage(),
-    NotificationPage(),
-    ProfilePage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _pages = [
+      // ✅ Pass callback into HomePage
+      HomePage(
+        onNavigateToHistory: () {
+          setState(() {
+            _currentIndex = 1; // Switch to History tab
+          });
+        },
+      ),
+      const HistoryPage(),
+      const MapPage(),
+      const NotificationPage(),
+      const ProfilePage(),
+    ];
+
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
