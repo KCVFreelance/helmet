@@ -7,7 +7,9 @@ import 'signin.dart'; // Import to access UserSession
 
 // Change HomePage to StatefulWidget to manage button state
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final VoidCallback? onNavigateToHistory; // 👈 added
+
+  const HomePage({super.key, this.onNavigateToHistory});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -607,7 +609,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Speed History Card
                   _buildFeatureCard(
                     icon: Icons.timeline_outlined,
                     iconColor: Colors.blue,
@@ -617,8 +618,13 @@ class _HomePageState extends State<HomePage> {
                     buttonText: "View Analytics",
                     buttonColor: Colors.blue,
                     gradient: [Colors.blue[50]!, Colors.blue[100]!],
+                    onPressed: () {
+                      if (widget.onNavigateToHistory != null) {
+                        widget
+                            .onNavigateToHistory!(); // 👈 switch tab instead of push
+                      }
+                    },
                   ),
-                  const SizedBox(height: 20),
 
                   // Bottom Row - Two Cards
                   Row(
@@ -634,6 +640,7 @@ class _HomePageState extends State<HomePage> {
                           buttonColor: Colors.green,
                           gradient: [Colors.green[50]!, Colors.green[100]!],
                           isCompact: true,
+                          onPressed: () {},
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -648,6 +655,7 @@ class _HomePageState extends State<HomePage> {
                           buttonColor: Colors.purple,
                           gradient: [Colors.purple[50]!, Colors.purple[100]!],
                           isCompact: true,
+                          onPressed: () {},
                         ),
                       ),
                     ],
@@ -718,6 +726,7 @@ class _HomePageState extends State<HomePage> {
     required Color buttonColor,
     required List<Color> gradient,
     bool isCompact = false,
+    required VoidCallback onPressed,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -792,7 +801,7 @@ class _HomePageState extends State<HomePage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: buttonColor,
                 foregroundColor: Colors.white,
