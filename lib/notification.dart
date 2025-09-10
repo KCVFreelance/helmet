@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'dart:async';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -15,6 +16,8 @@ class _NotificationPageState extends State<NotificationPage> {
 
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
   List<Map<String, dynamic>> notifications = [];
+  late StreamSubscription _alertSubscription;
+  late StreamSubscription _tripSubscription;
 
   @override
   void initState() {
@@ -22,18 +25,75 @@ class _NotificationPageState extends State<NotificationPage> {
     _loadNotifications();
   }
 
+  @override
+  void dispose() {
+    _alertSubscription.cancel();
+    _tripSubscription.cancel();
+    super.dispose();
+  }
+
+  // Helper to check if a date is today
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  // Helper to check if a date is yesterday
+  bool _isYesterday(DateTime date) {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    return date.year == yesterday.year &&
+        date.month == yesterday.month &&
+        date.day == yesterday.day;
+  }
+
+  // Group notifications by date category
+  Map<String, List<Map<String, dynamic>>> _groupNotifications(
+    List<Map<String, dynamic>> notifications,
+  ) {
+    final Map<String, List<Map<String, dynamic>>> grouped = {
+      'Today': [],
+      'Yesterday': [],
+      'Past': [],
+    };
+
+    for (var notification in notifications) {
+      final DateTime date = _parseTime(notification['time']);
+      if (_isToday(date)) {
+        grouped['Today']!.add(notification);
+      } else if (_isYesterday(date)) {
+        grouped['Yesterday']!.add(notification);
+      } else {
+        grouped['Past']!.add(notification);
+      }
+    }
+
+    return grouped;
+  }
+
   // Helper to parse the "time" string into DateTime for sorting
   DateTime _parseTime(String time) {
     try {
-      return DateTime.parse(time); // works if format is "yyyy-MM-dd HH:mm"
+      // Handle format "MM-dd-yyyy HH:mm"
+      List<String> parts = time.split(' ');
+      List<String> dateParts = parts[0].split('-');
+      String reformatted =
+          "${dateParts[2]}-${dateParts[0]}-${dateParts[1]} ${parts[1]}";
+      return DateTime.parse(reformatted);
     } catch (e) {
       return DateTime.now(); // fallback
     }
   }
 
   void _loadNotifications() {
+    // Clear existing notifications when reloading
+    setState(() {
+      notifications.clear();
+    });
+
     // Listen for alerts
-    _dbRef.child("1-000/alert").onValue.listen((event) {
+    _alertSubscription = _dbRef.child("1-000/alert").onValue.listen((event) {
       final data = event.snapshot.value as Map?;
       if (data != null) {
         List<Map<String, dynamic>> temp = [];
@@ -75,7 +135,9 @@ class _NotificationPageState extends State<NotificationPage> {
     });
 
     // Listen for recentTrips
-    _dbRef.child("1-000/recentTrips").onValue.listen((event) {
+    _tripSubscription = _dbRef.child("1-000/recentTrips").onValue.listen((
+      event,
+    ) {
       final data = event.snapshot.value as Map?;
       if (data != null) {
         List<Map<String, dynamic>> temp = [];
@@ -112,6 +174,8 @@ class _NotificationPageState extends State<NotificationPage> {
     final filteredNotifications = notifications.where((notif) {
       return selectedFilter == "All" || notif["type"] == selectedFilter;
     }).toList();
+
+    final groupedNotifications = _groupNotifications(filteredNotifications);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -201,21 +265,105 @@ class _NotificationPageState extends State<NotificationPage> {
                         style: GoogleFonts.poppins(color: Colors.grey[600]),
                       ),
                     )
-                  : ListView.builder(
+                  : ListView(
                       padding: const EdgeInsets.all(16),
-                      itemCount: filteredNotifications.length,
-                      itemBuilder: (context, index) {
-                        final notif = filteredNotifications[index];
-                        return _buildNotificationCard(
-                          title: notif["title"],
-                          description: notif["description"],
-                          time: notif["time"],
-                          icon: notif["icon"],
-                          iconColor: notif["iconColor"],
-                          isUnread: true,
-                          type: notif["type"],
-                        );
-                      },
+                      children: [
+                        // Today Section
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 12),
+                          child: Text(
+                            'Today',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                        ),
+                        if (groupedNotifications['Today']!.isNotEmpty)
+                          ...groupedNotifications['Today']!.map(
+                            (notif) => _buildNotificationCard(
+                              title: notif["title"],
+                              description: notif["description"],
+                              time: notif["time"],
+                              icon: notif["icon"],
+                              iconColor: notif["iconColor"],
+                              isUnread: true,
+                              type: notif["type"],
+                            ),
+                          )
+                        else
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 12),
+                            child: Text(
+                              'No notifications today',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+
+                        // Yesterday Section
+                        if (groupedNotifications['Yesterday']!.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 4,
+                              top: 20,
+                              bottom: 12,
+                            ),
+                            child: Text(
+                              'Yesterday',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                          ...groupedNotifications['Yesterday']!.map(
+                            (notif) => _buildNotificationCard(
+                              title: notif["title"],
+                              description: notif["description"],
+                              time: notif["time"],
+                              icon: notif["icon"],
+                              iconColor: notif["iconColor"],
+                              isUnread: true,
+                              type: notif["type"],
+                            ),
+                          ),
+                        ],
+
+                        // Past Section
+                        if (groupedNotifications['Past']!.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 4,
+                              top: 20,
+                              bottom: 12,
+                            ),
+                            child: Text(
+                              'Past',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ),
+                          ...groupedNotifications['Past']!.map(
+                            (notif) => _buildNotificationCard(
+                              title: notif["title"],
+                              description: notif["description"],
+                              time: notif["time"],
+                              icon: notif["icon"],
+                              iconColor: notif["iconColor"],
+                              isUnread: true,
+                              type: notif["type"],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
             ),
           ],

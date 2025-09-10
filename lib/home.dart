@@ -50,7 +50,7 @@ class _HomePageState extends State<HomePage> {
     final helmetId = _helmetId;
     if (helmetId == null) return;
     _coordSubscription = _database
-        .child('$helmetId/coordinates')
+        .child('$helmetId/coordinates/gps')
         .onValue
         .listen((event) {
           if (event.snapshot.exists) {
@@ -178,7 +178,8 @@ class _HomePageState extends State<HomePage> {
     // Save to recentTrips
     try {
       await _database.child('$helmetId/recentTrips/$timePeriod').set({
-        'date': dateStr, // MM-DD-YYYY format
+        'date':
+            "$dateStr ${_stopTime!.hour.toString().padLeft(2, '0')}:${_stopTime!.minute.toString().padLeft(2, '0')}", // MM-DD-YYYY HH:MM format
         'distance': travelDistance.toStringAsFixed(
           2,
         ), // Distance in km with 2 decimal places
@@ -495,7 +496,7 @@ class _HomePageState extends State<HomePage> {
 
                                       // Fetch coordinates from RTDB
                                       final coordSnapshot = await _database
-                                          .child('$helmetId/coordinates')
+                                          .child('$helmetId/coordinates/gps')
                                           .get();
                                       double lat = 0.0;
                                       double lng = 0.0;
