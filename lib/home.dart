@@ -159,8 +159,8 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Calculate travel time in minutes (stop time minus start time)
-    final travelTimeMinutes = _stopTime!.difference(_startTime!).inMinutes;
+    // Calculate travel time in seconds
+    final travelTimeSeconds = _stopTime!.difference(_startTime!).inSeconds;
 
     // Calculate travel distance in kilometers
     final travelDistance = _calculateDistance(
@@ -180,13 +180,11 @@ class _HomePageState extends State<HomePage> {
     // Save to recentTrips
     try {
       await _database.child('$helmetId/recentTrips/$timePeriod').set({
-        'date':
-            "$dateStr ${_stopTime!.hour.toString().padLeft(2, '0')}:${_stopTime!.minute.toString().padLeft(2, '0')}", // MM-DD-YYYY HH:MM format
+        'date': "$dateStr",
         'distance': travelDistance.toStringAsFixed(
           2,
         ), // Distance in km with 2 decimal places
-        'tTime':
-            travelTimeMinutes, // Travel time in minutes (stop time - start time)
+        'tTime': travelTimeSeconds, // Travel time in seconds
       });
       // Also save distance to coordinates/{date}/{time}/tDistance
       final timeKey =

@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'navBar.dart';
 import 'signin.dart';
 import 'signup.dart';
+import 'overspeed.dart';
 
 const firebaseWebOptions = FirebaseOptions(
   apiKey: "AIzaSyBcWBAJ2lCy9wOFx-kONqoxkTO9ey0E9Us",
@@ -29,6 +30,11 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
+
+  // Initialize overspeed service
+  final overspeedService = OverspeedService();
+  overspeedService.initOverspeedListener();
+
   runApp(const MyApp());
 }
 

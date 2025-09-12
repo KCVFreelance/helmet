@@ -26,13 +26,41 @@ class _SignUpState extends State<SignUp> {
       }
 
       try {
+        // First check if helmet ID exists
+        final dbRef = FirebaseDatabase.instance.ref();
+        final helmetSnapshot = await dbRef.child(helmetId).get();
+
+        if (!helmetSnapshot.exists) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Helmet ID does not exist. Please enter a valid Helmet ID.",
+              ),
+            ),
+          );
+          return;
+        }
+
+        // Check if helmet already has an account
+        final accountSnapshot = await dbRef.child('$helmetId/accounts').get();
+        if (accountSnapshot.exists) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "This Helmet ID is already registered to an account.",
+              ),
+            ),
+          );
+          return;
+        }
+
+        // If helmet exists and no account, create user
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
 
         // Save user info to Realtime Database
-        final dbRef = FirebaseDatabase.instance.ref();
         final now = DateTime.now();
         final createdDate =
             "${now.month.toString().padLeft(2, '0')}-${now.year}";

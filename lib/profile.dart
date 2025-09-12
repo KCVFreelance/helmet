@@ -463,22 +463,31 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _formatTravelTime(dynamic tTime) {
     if (tTime == null) return "-";
-    int minutes = 0;
+    int totalSeconds = 0;
     if (tTime is int) {
-      minutes = tTime;
+      totalSeconds = tTime;
     } else if (tTime is String) {
-      minutes = int.tryParse(tTime) ?? 0;
+      totalSeconds = int.tryParse(tTime) ?? 0;
     }
-    if (minutes >= 60) {
-      final h = minutes ~/ 60;
-      final m = minutes % 60;
-      if (m == 0) {
-        return "${h}h";
+
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      if (minutes == 0) {
+        return "${hours}h";
       } else {
-        return "${h}h ${m}m";
+        return "${hours}h ${minutes}m";
+      }
+    } else if (minutes > 0) {
+      if (seconds == 0) {
+        return "${minutes}m";
+      } else {
+        return "${minutes}m ${seconds}s";
       }
     } else {
-      return "${minutes}m";
+      return "${seconds}s";
     }
   }
 
@@ -509,6 +518,40 @@ class _ProfilePageState extends State<ProfilePage> {
         ? monthNames[monthNum]
         : parts[0];
     return "$monthWord $day, $year";
+  }
+
+  String _calculateSafetyScore() {
+    // Return 100 if distance is below minimum threshold (10km)
+    if (_totalDistance < 10) return "100";
+    if (_totalDistance == 0) return "100";
+
+    // Calculate alerts per kilometer
+    double alertsPerKm = _alertCount / _totalDistance;
+
+    // Apply formula: Score = 100 - (alerts_per_km * K)
+    // Using K = 1000 as scaling factor
+    int score = 100 - (alertsPerKm * 1000).round();
+
+    // Ensure score doesn't go below 0 or above 100
+    if (score < 0) return "0";
+    if (score > 100) return "100";
+    return score.toString();
+  }
+
+  String _getSafetyScoreText() {
+    final score = int.parse(_calculateSafetyScore());
+    if (score >= 90) return "Excellent";
+    if (score >= 70) return "Good";
+    if (score >= 50) return "Fair";
+    return "Poor";
+  }
+
+  Color _getSafetyScoreColor() {
+    final score = int.parse(_calculateSafetyScore());
+    if (score >= 90) return Colors.green[600]!;
+    if (score >= 70) return Colors.blue[600]!;
+    if (score >= 50) return Colors.orange[600]!;
+    return Colors.red[600]!;
   }
 
   @override
@@ -689,12 +732,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.green[50]!, Colors.green[100]!],
+                    colors: [
+                      _getSafetyScoreColor().withOpacity(0.1),
+                      _getSafetyScoreColor().withOpacity(0.2),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green[200]!),
+                  border: Border.all(
+                    color: _getSafetyScoreColor().withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -716,11 +764,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green[600],
+                            color: _getSafetyScoreColor(),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            "Excellent",
+                            _getSafetyScoreText(),
                             style: GoogleFonts.poppins(
                               color: Colors.white,
                               fontSize: 14,
@@ -752,11 +800,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Column(
                             children: [
                               Text(
-                                "85",
+                                _calculateSafetyScore(),
                                 style: GoogleFonts.poppins(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green[700],
+                                  color: _getSafetyScoreColor(),
                                 ),
                               ),
                               Text(
@@ -777,17 +825,24 @@ class _ProfilePageState extends State<ProfilePage> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
                                 child: LinearProgressIndicator(
-                                  value: 0.85,
+                                  value:
+                                      int.parse(_calculateSafetyScore()) / 100,
                                   minHeight: 12,
                                   backgroundColor: Colors.grey[300],
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.green[600]!,
+                                    _getSafetyScoreColor(),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                "Your driving behavior is excellent! Keep up the safe driving habits.",
+                                _getSafetyScoreText() == "Excellent"
+                                    ? "Your driving behavior is excellent! Keep up the safe driving habits."
+                                    : _getSafetyScoreText() == "Good"
+                                    ? "Good driving behavior! Keep improving for excellence."
+                                    : _getSafetyScoreText() == "Fair"
+                                    ? "Fair driving record. Focus on reducing alerts."
+                                    : "Safety needs improvement. Please drive more carefully.",
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   color: Colors.grey[700],
