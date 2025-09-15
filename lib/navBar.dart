@@ -18,14 +18,24 @@ class _BottomNavBarState extends State<BottomNavBar> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> _pages = [
-      // ✅ Pass callback into HomePage
       HomePage(
         onNavigateToHistory: () {
           setState(() {
-            _currentIndex = 1; // Switch to History tab
+            _currentIndex = 1;
+          });
+        },
+        onNavigateToMap: () {
+          setState(() {
+            _currentIndex = 2;
+          });
+        },
+        onNavigateToProfile: () {
+          setState(() {
+            _currentIndex = 4;
           });
         },
       ),
+
       const HistoryPage(),
       const MapPage(),
       const NotificationPage(),

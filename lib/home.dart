@@ -7,9 +7,16 @@ import 'signin.dart'; // Import to access UserSession
 
 // Change HomePage to StatefulWidget to manage button state
 class HomePage extends StatefulWidget {
-  final VoidCallback? onNavigateToHistory; // 👈 added
+  final VoidCallback? onNavigateToHistory;
+  final VoidCallback? onNavigateToMap;
+  final VoidCallback? onNavigateToProfile;
 
-  const HomePage({super.key, this.onNavigateToHistory});
+  const HomePage({
+    super.key,
+    this.onNavigateToHistory,
+    this.onNavigateToMap,
+    this.onNavigateToProfile,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -623,7 +630,7 @@ class _HomePageState extends State<HomePage> {
                       }
                     },
                   ),
-
+                  const SizedBox(height: 16),
                   // Bottom Row - Two Cards
                   Row(
                     children: [
@@ -638,7 +645,11 @@ class _HomePageState extends State<HomePage> {
                           buttonColor: Colors.green,
                           gradient: [Colors.green[50]!, Colors.green[100]!],
                           isCompact: true,
-                          onPressed: () {},
+                          onPressed: () {
+                            if (widget.onNavigateToMap != null) {
+                              widget.onNavigateToMap!();
+                            }
+                          },
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -653,7 +664,11 @@ class _HomePageState extends State<HomePage> {
                           buttonColor: Colors.purple,
                           gradient: [Colors.purple[50]!, Colors.purple[100]!],
                           isCompact: true,
-                          onPressed: () {},
+                          onPressed: () {
+                            if (widget.onNavigateToProfile != null) {
+                              widget.onNavigateToProfile!();
+                            }
+                          },
                         ),
                       ),
                     ],
