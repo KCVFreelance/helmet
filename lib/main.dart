@@ -8,7 +8,7 @@ import 'firebase_options.dart';
 import 'navBar.dart';
 import 'signin.dart';
 import 'signup.dart';
-import 'overspeed.dart';
+import 'overspeed.dart'; // Import your overspeed service
 
 const firebaseWebOptions = FirebaseOptions(
   apiKey: "AIzaSyBcWBAJ2lCy9wOFx-kONqoxkTO9ey0E9Us",
@@ -31,7 +31,6 @@ Future<void> main() async {
     );
   }
 
-  // Initialize overspeed service
   final overspeedService = OverspeedService();
   overspeedService.initOverspeedListener();
 
@@ -54,7 +53,6 @@ class MyApp extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasData) {
-            // ✅ Go to BottomNavBar instead of HomePage
             return const BottomNavBar();
           }
           return SignIn();
