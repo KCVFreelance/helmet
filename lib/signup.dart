@@ -54,14 +54,20 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
         final helmetSnapshot = await dbRef.child(helmetId).get();
 
         if (!helmetSnapshot.exists) {
-          _showSnackBar("Helmet ID does not exist. Please enter a valid Helmet ID.", isError: true);
+          _showSnackBar(
+            "Helmet ID does not exist. Please enter a valid Helmet ID.",
+            isError: true,
+          );
           return;
         }
 
         // Check if helmet already has an account
         final accountSnapshot = await dbRef.child('$helmetId/accounts').get();
         if (accountSnapshot.exists) {
-          _showSnackBar("This Helmet ID is already registered to an account.", isError: true);
+          _showSnackBar(
+            "This Helmet ID is already registered to an account.",
+            isError: true,
+          );
           return;
         }
 
@@ -138,11 +144,14 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          labelStyle: TextStyle(color: Colors.blue[700], fontWeight: FontWeight.w500),
+          labelStyle: TextStyle(
+            color: Colors.blue[700],
+            fontWeight: FontWeight.w500,
+          ),
           hintStyle: TextStyle(color: Colors.grey[400]),
-          prefixIcon: prefixIcon != null 
-            ? Icon(prefixIcon, color: Colors.blue[600])
-            : null,
+          prefixIcon: prefixIcon != null
+              ? Icon(prefixIcon, color: Colors.blue[600])
+              : null,
           suffixIcon: suffixIcon,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -164,7 +173,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    
+
     return Scaffold(
       backgroundColor: Colors.blue[50],
       resizeToAvoidBottomInset: true,
@@ -173,7 +182,10 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
           physics: ClampingScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+              minHeight:
+                  size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom,
             ),
             child: IntrinsicHeight(
               child: Stack(
@@ -185,10 +197,7 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          Colors.blue[600]!,
-                          Colors.blue[800]!,
-                        ],
+                        colors: [Colors.blue[600]!, Colors.blue[800]!],
                       ),
                       borderRadius: BorderRadius.only(
                         bottomLeft: Radius.circular(30),
@@ -223,7 +232,9 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                   ),
                   // Main content
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20), // Reduced padding
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                    ), // Reduced padding
                     child: FadeTransition(
                       opacity: _fadeAnimation,
                       child: Column(
@@ -272,7 +283,9 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                           SizedBox(height: 20), // Reduced
                           // Signup form card
                           Container(
-                            margin: EdgeInsets.symmetric(horizontal: 4), // Reduced
+                            margin: EdgeInsets.symmetric(
+                              horizontal: 4,
+                            ), // Reduced
                             padding: EdgeInsets.all(20), // Reduced
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -312,7 +325,9 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                     hint: 'Enter your helmet ID',
                                     prefixIcon: Icons.security_outlined,
                                     onChanged: (val) => helmetId = val,
-                                    validator: (val) => val!.isEmpty ? 'Helmet ID is required' : null,
+                                    validator: (val) => val!.isEmpty
+                                        ? 'Helmet ID is required'
+                                        : null,
                                   ),
                                   SizedBox(height: 14), // Reduced
                                   _buildTextField(
@@ -320,7 +335,9 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                     hint: 'Enter first name',
                                     prefixIcon: Icons.person_outline,
                                     onChanged: (val) => firstName = val,
-                                    validator: (val) => val!.isEmpty ? 'First name is required' : null,
+                                    validator: (val) => val!.isEmpty
+                                        ? 'First name is required'
+                                        : null,
                                   ),
                                   SizedBox(height: 14),
                                   _buildTextField(
@@ -328,7 +345,9 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                     hint: 'Enter last name',
                                     prefixIcon: Icons.person_outline,
                                     onChanged: (val) => lastName = val,
-                                    validator: (val) => val!.isEmpty ? 'Last name is required' : null,
+                                    validator: (val) => val!.isEmpty
+                                        ? 'Last name is required'
+                                        : null,
                                   ),
                                   SizedBox(height: 14), // Reduced
                                   _buildTextField(
@@ -336,7 +355,8 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                     hint: 'Enter your email',
                                     prefixIcon: Icons.email_outlined,
                                     onChanged: (val) => email = val,
-                                    validator: (val) => val != null && val.contains('@')
+                                    validator: (val) =>
+                                        val != null && val.contains('@')
                                         ? null
                                         : 'Please enter a valid email',
                                   ),
@@ -347,19 +367,21 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                     prefixIcon: Icons.lock_outline,
                                     obscureText: !_isPasswordVisible,
                                     onChanged: (val) => password = val,
-                                    validator: (val) => val != null && val.length >= 6
+                                    validator: (val) =>
+                                        val != null && val.length >= 6
                                         ? null
                                         : 'Password must be at least 6 characters',
                                     suffixIcon: IconButton(
                                       icon: Icon(
-                                        _isPasswordVisible 
-                                          ? Icons.visibility_outlined 
-                                          : Icons.visibility_off_outlined,
+                                        _isPasswordVisible
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined,
                                         color: Colors.grey[600],
                                       ),
                                       onPressed: () {
                                         setState(() {
-                                          _isPasswordVisible = !_isPasswordVisible;
+                                          _isPasswordVisible =
+                                              !_isPasswordVisible;
                                         });
                                       },
                                     ),
@@ -371,19 +393,21 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                     prefixIcon: Icons.lock_outline,
                                     obscureText: !_isConfirmPasswordVisible,
                                     onChanged: (val) => confirmPassword = val,
-                                    validator: (val) => val != null && val.length >= 6
+                                    validator: (val) =>
+                                        val != null && val.length >= 6
                                         ? null
                                         : 'Password must be at least 6 characters',
                                     suffixIcon: IconButton(
                                       icon: Icon(
-                                        _isConfirmPasswordVisible 
-                                          ? Icons.visibility_outlined 
-                                          : Icons.visibility_off_outlined,
+                                        _isConfirmPasswordVisible
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined,
                                         color: Colors.grey[600],
                                       ),
                                       onPressed: () {
                                         setState(() {
-                                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                          _isConfirmPasswordVisible =
+                                              !_isConfirmPasswordVisible;
                                         });
                                       },
                                     ),
@@ -395,7 +419,10 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                     height: 50, // Reduced
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
-                                        colors: [Colors.blue[600]!, Colors.blue[700]!],
+                                        colors: [
+                                          Colors.blue[600]!,
+                                          Colors.blue[700]!,
+                                        ],
                                       ),
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
@@ -411,7 +438,9 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                         backgroundColor: Colors.transparent,
                                         shadowColor: Colors.transparent,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                       onPressed: _isLoading ? null : _submit,
@@ -421,7 +450,10 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                               width: 18, // Reduced
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2,
-                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(Colors.white),
                                               ),
                                             )
                                           : Text(
@@ -439,7 +471,10 @@ class _SignUpState extends State<SignUp> with TickerProviderStateMixin {
                                   Center(
                                     child: TextButton(
                                       onPressed: () {
-                                        Navigator.pushReplacementNamed(context, '/signin');
+                                        Navigator.pushReplacementNamed(
+                                          context,
+                                          '/signin',
+                                        );
                                       },
                                       child: RichText(
                                         text: TextSpan(

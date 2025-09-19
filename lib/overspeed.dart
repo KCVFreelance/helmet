@@ -2,12 +2,16 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:latlong2/latlong.dart';
+import 'signin.dart'; // Add this import
 
 class OverspeedService {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
   void initOverspeedListener() {
-    _database.child('1-000/overspeed').onValue.listen((event) async {
+    final helmetId = UserSession.helmetId;
+    if (helmetId == null) return;
+
+    _database.child('$helmetId/overspeed').onValue.listen((event) async {
       if (event.snapshot.exists) {
         final overspeedData = event.snapshot.value as Map<dynamic, dynamic>;
         if (overspeedData.containsKey('latitude') &&
@@ -23,8 +27,11 @@ class OverspeedService {
   }
 
   Future<Map<dynamic, dynamic>?> getOverspeedData() async {
+    final helmetId = UserSession.helmetId;
+    if (helmetId == null) return null;
+
     try {
-      final snapshot = await _database.child('1-000/overspeed').get();
+      final snapshot = await _database.child('$helmetId/overspeed').get();
       if (snapshot.exists) {
         return snapshot.value as Map<dynamic, dynamic>;
       }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:async';
+import 'signin.dart'; // Add this import
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -87,13 +88,16 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   void _loadNotifications() {
+    final helmetId = UserSession.helmetId;
+    if (helmetId == null) return;
+
     // Clear existing notifications when reloading
     setState(() {
       notifications.clear();
     });
 
     // Listen for alerts
-    _alertSubscription = _dbRef.child("1-000/alert").onValue.listen((event) {
+    _alertSubscription = _dbRef.child("$helmetId/alert").onValue.listen((event) {
       final data = event.snapshot.value as Map?;
       if (data != null) {
         List<Map<String, dynamic>> temp = [];
@@ -135,7 +139,7 @@ class _NotificationPageState extends State<NotificationPage> {
     });
 
     // Listen for recentTrips
-    _tripSubscription = _dbRef.child("1-000/recentTrips").onValue.listen((
+    _tripSubscription = _dbRef.child("$helmetId/recentTrips").onValue.listen((
       event,
     ) {
       final data = event.snapshot.value as Map?;
@@ -504,7 +508,7 @@ class _NotificationPageState extends State<NotificationPage> {
             ),
           ),
         ),
-      ),
-    );
+      )
+      );
   }
 }

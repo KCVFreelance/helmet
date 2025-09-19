@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart' as polylines;
+import 'package:flutter_polyline_points/flutter_polyline_points.dart'
+    as polylines;
 import 'package:http/http.dart' as http;
+import 'signin.dart'; // Add this import
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -14,11 +16,7 @@ class MapPage extends StatefulWidget {
   State<MapPage> createState() => _MapPageState();
 }
 
-enum TravelMode {
-  driving,
-  walking,
-  motorcycle,
-}
+enum TravelMode { driving, walking, motorcycle }
 
 class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   final Completer<GoogleMapController> _controller = Completer();
@@ -39,8 +37,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   late AnimationController _pulseAnimationController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _pulseAnimation;
-  
-  static const String GOOGLE_MAPS_API_KEY = 'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
+
+  static const String GOOGLE_MAPS_API_KEY =
+      'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
 
   @override
   void initState() {
@@ -61,21 +60,20 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 1.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0.0, 1.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _slideAnimationController,
+            curve: Curves.easeInOut,
+          ),
+        );
 
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _pulseAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     _pulseAnimationController.repeat(reverse: true);
   }
@@ -113,38 +111,45 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   }
 
   void _startLocationUpdates() {
-    _locationSubscription = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 5,
-      ),
-    ).listen((Position position) {
-      setState(() {
-        startLocation = LatLng(position.latitude, position.longitude);
-        _updateMarkers();
-      });
-      if (endLocation != null && !_isLoadingRoute) {
-        _loadRoute();
-      }
-    });
+    _locationSubscription =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.bestForNavigation,
+            distanceFilter: 5,
+          ),
+        ).listen((Position position) {
+          setState(() {
+            startLocation = LatLng(position.latitude, position.longitude);
+            _updateMarkers();
+          });
+          if (endLocation != null && !_isLoadingRoute) {
+            _loadRoute();
+          }
+        });
   }
 
   void _startDeviceLocationUpdates() {
-    _deviceLocationSubscription = _database.child('1-000/coordinates/gps').onValue.listen((event) {
-      if (event.snapshot.exists) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>;
-        setState(() {
-          endLocation = LatLng(
-            double.parse(data['latitude'].toString()),
-            double.parse(data['longitude'].toString())
-          );
-          _updateMarkers();
+    final helmetId = UserSession.helmetId;
+    if (helmetId == null) return;
+
+    _deviceLocationSubscription = _database
+        .child('$helmetId/coordinates/gps')
+        .onValue
+        .listen((event) {
+          if (event.snapshot.exists) {
+            final data = event.snapshot.value as Map<dynamic, dynamic>;
+            setState(() {
+              endLocation = LatLng(
+                double.parse(data['latitude'].toString()),
+                double.parse(data['longitude'].toString()),
+              );
+              _updateMarkers();
+            });
+            if (startLocation != null && !_isLoadingRoute) {
+              _loadRoute();
+            }
+          }
         });
-        if (startLocation != null && !_isLoadingRoute) {
-          _loadRoute();
-        }
-      }
-    });
   }
 
   void _updateMarkers() {
@@ -175,36 +180,43 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
       _polylines = {};
       final polylinePoints = polylines.PolylinePoints();
       final client = http.Client();
-      
-      final uri = Uri.https('maps.googleapis.com', '/maps/api/directions/json', {
-        'origin': '${startLocation!.latitude},${startLocation!.longitude}',
-        'destination': '${endLocation!.latitude},${endLocation!.longitude}',
-        'mode': _selectedMode == TravelMode.motorcycle ? 'driving' : _selectedMode.toString().split('.').last,
-        'alternatives': 'true',
-        'key': GOOGLE_MAPS_API_KEY,
-      });
 
-      final result = await client.get(uri).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Request timed out');
-        },
-      );
+      final uri =
+          Uri.https('maps.googleapis.com', '/maps/api/directions/json', {
+            'origin': '${startLocation!.latitude},${startLocation!.longitude}',
+            'destination': '${endLocation!.latitude},${endLocation!.longitude}',
+            'mode': _selectedMode == TravelMode.motorcycle
+                ? 'driving'
+                : _selectedMode.toString().split('.').last,
+            'alternatives': 'true',
+            'key': GOOGLE_MAPS_API_KEY,
+          });
+
+      final result = await client
+          .get(uri)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Request timed out');
+            },
+          );
 
       client.close();
 
       if (result.statusCode == 200) {
         final data = json.decode(result.body);
-        
-        if (data['status'] == 'OK' && data['routes'] != null && data['routes'].isNotEmpty) {
+
+        if (data['status'] == 'OK' &&
+            data['routes'] != null &&
+            data['routes'].isNotEmpty) {
           _polylines = {};
           for (var i = 0; i < data['routes'].length; i++) {
             final route = data['routes'][i];
             if (route['overview_polyline'] != null) {
               final points = polylinePoints.decodePolyline(
-                route['overview_polyline']['points']
+                route['overview_polyline']['points'],
               );
-              
+
               final polylineCoords = points
                   .map((point) => LatLng(point.latitude, point.longitude))
                   .toList();
@@ -212,7 +224,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               final leg = route['legs'][0];
               final duration = leg['duration']['text'];
               final distance = leg['distance']['text'];
-              
+
               setState(() {
                 if (i == 0) {
                   _duration = duration;
@@ -221,7 +233,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                 _polylines.add(
                   Polyline(
                     polylineId: PolylineId('route_$i'),
-                    color: i == 0 ? const Color(0xFF4285F4) : const Color(0xFF666666),
+                    color: i == 0
+                        ? const Color(0xFF4285F4)
+                        : const Color(0xFF666666),
                     points: polylineCoords,
                     width: i == 0 ? 6 : 4,
                     patterns: [],
@@ -247,16 +261,17 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               });
             }
           }
-          
+
           setState(() {
             _routeError = null;
             _showRouteInfo = true;
           });
-          
+
           _slideAnimationController.forward();
           _focusOnRoute();
         } else {
-          final errorMessage = data['error_message'] ?? data['status'] ?? 'Unknown error';
+          final errorMessage =
+              data['error_message'] ?? data['status'] ?? 'Unknown error';
           setState(() {
             _routeError = 'Route not found: $errorMessage';
           });
@@ -287,16 +302,20 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
 
     try {
       final GoogleMapController controller = await _controller.future;
-      
-      double minLat = startLocation!.latitude < endLocation!.latitude 
-          ? startLocation!.latitude : endLocation!.latitude;
-      double maxLat = startLocation!.latitude > endLocation!.latitude 
-          ? startLocation!.latitude : endLocation!.latitude;
-      double minLng = startLocation!.longitude < endLocation!.longitude 
-          ? startLocation!.longitude : endLocation!.longitude;
-      double maxLng = startLocation!.longitude > endLocation!.longitude 
-          ? startLocation!.longitude : endLocation!.longitude;
-      
+
+      double minLat = startLocation!.latitude < endLocation!.latitude
+          ? startLocation!.latitude
+          : endLocation!.latitude;
+      double maxLat = startLocation!.latitude > endLocation!.latitude
+          ? startLocation!.latitude
+          : endLocation!.latitude;
+      double minLng = startLocation!.longitude < endLocation!.longitude
+          ? startLocation!.longitude
+          : endLocation!.longitude;
+      double maxLng = startLocation!.longitude > endLocation!.longitude
+          ? startLocation!.longitude
+          : endLocation!.longitude;
+
       const double padding = 0.005;
       final bounds = LatLngBounds(
         southwest: LatLng(minLat - padding, minLng - padding),
@@ -332,7 +351,11 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
       ),
       child: Row(
         children: [
-          _buildModeButton(TravelMode.motorcycle, Icons.two_wheeler, 'Motorcycle'),
+          _buildModeButton(
+            TravelMode.motorcycle,
+            Icons.two_wheeler,
+            'Motorcycle',
+          ),
           _buildModeButton(TravelMode.driving, Icons.directions_car, 'Car'),
           _buildModeButton(TravelMode.walking, Icons.directions_walk, 'Walk'),
         ],
@@ -413,8 +436,8 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                         _selectedMode == TravelMode.walking
                             ? Icons.directions_walk
                             : _selectedMode == TravelMode.motorcycle
-                                ? Icons.two_wheeler
-                                : Icons.directions_car,
+                            ? Icons.two_wheeler
+                            : Icons.directions_car,
                         color: const Color(0xFF4285F4),
                         size: 24,
                       ),
@@ -441,10 +464,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               const SizedBox(height: 8),
               const Text(
                 'Tap on alternative routes to select',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF666666),
-                ),
+                style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
               ),
             ],
           ],
@@ -481,7 +501,9 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4285F4)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF4285F4),
+                      ),
                       strokeWidth: 3,
                     ),
                     SizedBox(height: 12),
@@ -530,7 +552,11 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                 color: Colors.red.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.error_outline, color: Colors.red, size: 24),
+              child: const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -548,13 +574,19 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4285F4),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
               ),
-              child: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: const Text(
+                'Try Again',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -597,9 +629,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
           ),
 
           // Top travel mode selector
-          SafeArea(
-            child: _buildTravelModeSelector(),
-          ),
+          SafeArea(child: _buildTravelModeSelector()),
 
           // My location button
           Positioned(
@@ -626,9 +656,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               bottom: 0,
               left: 0,
               right: 0,
-              child: SafeArea(
-                child: _buildRouteInfo(),
-              ),
+              child: SafeArea(child: _buildRouteInfo()),
             ),
         ],
       ),

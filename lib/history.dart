@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'signin.dart'; // Add this import
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -57,7 +58,10 @@ class _HistoryPageState extends State<HistoryPage> {
     });
 
     try {
-      final coordsRef = FirebaseDatabase.instance.ref("1-000/coordinates");
+      final helmetId = UserSession.helmetId;
+      if (helmetId == null) return;
+
+      final coordsRef = FirebaseDatabase.instance.ref("$helmetId/coordinates");
       final snapshot = await coordsRef.get();
 
       hourlyData.clear();

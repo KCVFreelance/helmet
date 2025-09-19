@@ -441,18 +441,18 @@ class _ProfilePageState extends State<ProfilePage> {
     if (monthNum == null) return "Member since Unknown";
     const monthNames = [
       '',
-      'January',
-      'February',
-      'March',
-      'April',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
       'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final monthWord = (monthNum >= 1 && monthNum <= 12)
         ? monthNames[monthNum]
@@ -501,18 +501,18 @@ class _ProfilePageState extends State<ProfilePage> {
     if (monthNum == null || day == null) return date;
     const monthNames = [
       '',
-      'January',
-      'February',
-      'March',
-      'April',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
       'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final monthWord = (monthNum >= 1 && monthNum <= 12)
         ? monthNames[monthNum]
@@ -556,17 +556,23 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+
     return Scaffold(
       backgroundColor: Color(0xFFF8FAFD),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmallScreen ? 16 : 24,
+            vertical: isSmallScreen ? 20 : 32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Info Card
+              // Profile Info Card - Responsive Layout
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -578,106 +584,150 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.blue[100]!, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(0.2),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.blue,
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                _firstName.isNotEmpty
-                                    ? _firstName[0].toUpperCase()
-                                    : "U",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _isLoading
-                              ? Container(
-                                  height: 24,
-                                  width: 150,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                )
-                              : Text(
-                                  "$_firstName $_lastName".trim(),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_outlined,
-                                size: 16,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _memberSinceDisplay,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
+                    // Main Profile Row (without action buttons)
+                    Row(
+                      children: [
+                        // Avatar
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.blue[100]!,
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.withOpacity(0.2),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                        ],
-                      ),
+                          child: CircleAvatar(
+                            radius: isSmallScreen ? 32 : 40,
+                            backgroundColor: Colors.blue,
+                            child: _isLoading
+                                ? SizedBox(
+                                    width: isSmallScreen ? 16 : 20,
+                                    height: isSmallScreen ? 16 : 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    _firstName.isNotEmpty
+                                        ? _firstName[0].toUpperCase()
+                                        : "U",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: isSmallScreen ? 24 : 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        SizedBox(width: isSmallScreen ? 12 : 20),
+
+                        // User Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _isLoading
+                                  ? Container(
+                                      height: isSmallScreen ? 20 : 24,
+                                      width: isSmallScreen ? 120 : 150,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[300],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    )
+                                  : FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        "$_firstName $_lastName".trim(),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: isSmallScreen ? 18 : 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[800],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                              SizedBox(height: isSmallScreen ? 4 : 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      _memberSinceDisplay,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: isSmallScreen ? 12 : 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          IconButton(
+
+                    SizedBox(height: isSmallScreen ? 16 : 20),
+
+                    // Action Buttons Row - Now below the profile info
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Edit Profile Button
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _showEditDialog,
                             icon: Icon(
                               Icons.edit_outlined,
-                              color: Colors.blue[700],
+                              size: isSmallScreen ? 18 : 20,
                             ),
-                            onPressed: _isLoading ? null : _showEditDialog,
+                            label: Text(
+                              'Edit Profile',
+                              style: GoogleFonts.poppins(
+                                fontSize: isSmallScreen ? 13 : 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[600],
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallScreen ? 12 : 16,
+                                vertical: isSmallScreen ? 10 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          IconButton(
-                            icon: Icon(Icons.logout, color: Colors.red[400]),
-                            tooltip: 'Logout',
+                        ),
+
+                        SizedBox(width: isSmallScreen ? 12 : 16),
+
+                        // Logout Button
+                        Expanded(
+                          child: ElevatedButton.icon(
                             onPressed: () async {
                               UserSession.helmetId = null;
                               try {
@@ -690,17 +740,40 @@ class _ProfilePageState extends State<ProfilePage> {
                                 );
                               }
                             },
+                            icon: Icon(
+                              Icons.logout,
+                              size: isSmallScreen ? 18 : 20,
+                            ),
+                            label: Text(
+                              'Logout',
+                              style: GoogleFonts.poppins(
+                                fontSize: isSmallScreen ? 13 : 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[400],
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallScreen ? 12 : 16,
+                                vertical: isSmallScreen ? 10 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: isSmallScreen ? 16 : 24),
 
-              // Statistics Row with improved design
+              // Statistics Row with responsive spacing
               Row(
                 children: [
                   Expanded(
@@ -711,25 +784,27 @@ class _ProfilePageState extends State<ProfilePage> {
                           : "${_totalDistance.toStringAsFixed(2)} km",
                       Icons.route_outlined,
                       Colors.blue,
+                      isSmallScreen,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: isSmallScreen ? 8 : 12),
                   Expanded(
                     child: _buildStatCard(
                       "Alerts",
                       _alertCount.toString(),
                       Icons.notifications_outlined,
                       Colors.red,
+                      isSmallScreen,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: isSmallScreen ? 16 : 24),
 
-              // Safety Score Card with enhanced design
+              // Safety Score Card
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -753,15 +828,15 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           "Safety Score",
                           style: GoogleFonts.poppins(
-                            fontSize: 18,
+                            fontSize: isSmallScreen ? 16 : 18,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey[800],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isSmallScreen ? 8 : 12,
+                            vertical: isSmallScreen ? 4 : 6,
                           ),
                           decoration: BoxDecoration(
                             color: _getSafetyScoreColor(),
@@ -771,7 +846,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             _getSafetyScoreText(),
                             style: GoogleFonts.poppins(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: isSmallScreen ? 12 : 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -779,103 +854,174 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: isSmallScreen ? 16 : 20),
 
-                    // Score Display
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
+                    // Score Display - Responsive Layout
+                    isSmallScreen
+                        ? Column(
                             children: [
-                              Text(
-                                _calculateSafetyScore(),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getSafetyScoreColor(),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      _calculateSafetyScore(),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: _getSafetyScoreColor(),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "/ 100",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Text(
-                                "out of 100",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: LinearProgressIndicator(
-                                  value:
-                                      int.parse(_calculateSafetyScore()) / 100,
-                                  minHeight: 12,
-                                  backgroundColor: Colors.grey[300],
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    _getSafetyScoreColor(),
+                              const SizedBox(height: 16),
+                              Column(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: LinearProgressIndicator(
+                                      value:
+                                          int.parse(_calculateSafetyScore()) /
+                                          100,
+                                      minHeight: 12,
+                                      backgroundColor: Colors.grey[300],
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        _getSafetyScoreColor(),
+                                      ),
+                                    ),
                                   ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _getSafetyScoreText() == "Excellent"
+                                        ? "Excellent driving behavior! Keep up the safe habits."
+                                        : _getSafetyScoreText() == "Good"
+                                        ? "Good driving behavior! Keep improving."
+                                        : _getSafetyScoreText() == "Fair"
+                                        ? "Fair driving record. Focus on reducing alerts."
+                                        : "Safety needs improvement. Drive carefully.",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.green.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      _calculateSafetyScore(),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: _getSafetyScoreColor(),
+                                      ),
+                                    ),
+                                    Text(
+                                      "out of 100",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                _getSafetyScoreText() == "Excellent"
-                                    ? "Your driving behavior is excellent! Keep up the safe driving habits."
-                                    : _getSafetyScoreText() == "Good"
-                                    ? "Good driving behavior! Keep improving for excellence."
-                                    : _getSafetyScoreText() == "Fair"
-                                    ? "Fair driving record. Focus on reducing alerts."
-                                    : "Safety needs improvement. Please drive more carefully.",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  color: Colors.grey[700],
-                                  height: 1.4,
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: LinearProgressIndicator(
+                                        value:
+                                            int.parse(_calculateSafetyScore()) /
+                                            100,
+                                        minHeight: 12,
+                                        backgroundColor: Colors.grey[300],
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              _getSafetyScoreColor(),
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _getSafetyScoreText() == "Excellent"
+                                          ? "Your driving behavior is excellent! Keep up the safe driving habits."
+                                          : _getSafetyScoreText() == "Good"
+                                          ? "Good driving behavior! Keep improving for excellence."
+                                          : _getSafetyScoreText() == "Fair"
+                                          ? "Fair driving record. Focus on reducing alerts."
+                                          : "Safety needs improvement. Please drive more carefully.",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 13,
+                                        color: Colors.grey[700],
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: isSmallScreen ? 16 : 24),
 
-              // Recent Trips Section with improved header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Recent Trips",
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                ],
+              // Recent Trips Section
+              Text(
+                "Recent Trips",
+                style: GoogleFonts.poppins(
+                  fontSize: isSmallScreen ? 18 : 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: isSmallScreen ? 12 : 16),
 
               // Trip History Cards
               _buildTripCard(
@@ -891,6 +1037,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 Colors.blue,
                 Icons.wb_sunny_outlined,
+                isSmallScreen,
               ),
               _buildTripCard(
                 "Evening Drive",
@@ -905,9 +1052,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 Colors.orange,
                 Icons.nightlight_outlined,
+                isSmallScreen,
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: isSmallScreen ? 16 : 20),
             ],
           ),
         ),
@@ -915,15 +1063,16 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Updated stat card design
+  // Updated stat card design with responsive sizing
   Widget _buildStatCard(
     String title,
     String value,
     IconData icon,
     Color color,
+    bool isSmallScreen,
   ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -938,38 +1087,42 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: isSmallScreen ? 20 : 24),
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              color: color,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+          SizedBox(height: isSmallScreen ? 8 : 12),
+          FittedBox(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                color: color,
+                fontSize: isSmallScreen ? 16 : 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: isSmallScreen ? 2 : 4),
           Text(
             title,
             style: GoogleFonts.poppins(
               color: Colors.grey[600],
-              fontSize: 12,
+              fontSize: isSmallScreen ? 11 : 12,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  // Updated trip card design
+  // Updated trip card design with responsive sizing
   Widget _buildTripCard(
     String title,
     String date,
@@ -977,10 +1130,11 @@ class _ProfilePageState extends State<ProfilePage> {
     String time,
     Color color,
     IconData icon,
+    bool isSmallScreen,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.only(bottom: isSmallScreen ? 8 : 12),
+      padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -995,14 +1149,18 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: [color.withOpacity(0.8), color]),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: isSmallScreen ? 20 : 24,
+            ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isSmallScreen ? 12 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1010,25 +1168,31 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   title,
                   style: GoogleFonts.poppins(
-                    fontSize: 16,
+                    fontSize: isSmallScreen ? 14 : 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[800],
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: isSmallScreen ? 4 : 6),
                 Row(
                   children: [
                     Icon(
                       Icons.calendar_today_outlined,
-                      size: 14,
+                      size: 12,
                       color: Colors.grey[500],
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      date,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: Colors.grey[600],
+                    Expanded(
+                      child: Text(
+                        date,
+                        style: GoogleFonts.poppins(
+                          fontSize: isSmallScreen ? 11 : 13,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -1040,7 +1204,10 @@ class _ProfilePageState extends State<ProfilePage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmallScreen ? 6 : 8,
+                  vertical: isSmallScreen ? 2 : 4,
+                ),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -1048,26 +1215,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Text(
                   distance,
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
+                    fontSize: isSmallScreen ? 12 : 14,
                     fontWeight: FontWeight.w600,
                     color: color,
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: isSmallScreen ? 4 : 6),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.access_time_outlined,
-                    size: 14,
+                    size: 12,
                     color: Colors.grey[500],
                   ),
                   const SizedBox(width: 4),
                   Text(
                     time,
                     style: GoogleFonts.poppins(
-                      fontSize: 13,
+                      fontSize: isSmallScreen ? 11 : 13,
                       color: Colors.grey[600],
                     ),
                   ),

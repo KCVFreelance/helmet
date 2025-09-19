@@ -52,8 +52,9 @@ class _HomePageState extends State<HomePage> {
   String? _currentAddress;
   double? _lastSpeedLimitLatitude;
   double? _lastSpeedLimitLongitude;
-  
-  static const String GOOGLE_MAPS_API_KEY = 'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
+
+  static const String GOOGLE_MAPS_API_KEY =
+      'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
 
   @override
   void dispose() {
@@ -79,12 +80,12 @@ class _HomePageState extends State<HomePage> {
               speed = cSpeed.toDouble();
             else if (cSpeed is String)
               speed = double.tryParse(cSpeed) ?? 0.0;
-            
+
             final rawLat = coordData['latitude'];
             final rawLng = coordData['longitude'];
             double lat = 0.0;
             double lng = 0.0;
-            
+
             if (rawLat is double) {
               lat = rawLat;
             } else if (rawLat is int) {
@@ -92,7 +93,7 @@ class _HomePageState extends State<HomePage> {
             } else if (rawLat is String) {
               lat = double.tryParse(rawLat) ?? 0.0;
             }
-            
+
             if (rawLng is double) {
               lng = rawLng;
             } else if (rawLng is int) {
@@ -100,16 +101,22 @@ class _HomePageState extends State<HomePage> {
             } else if (rawLng is String) {
               lng = double.tryParse(rawLng) ?? 0.0;
             }
-            
+
             setState(() {
               _currentSpeed = speed;
               latitude = lat;
               longitude = lng;
             });
-            
-            if (_lastSpeedLimitLatitude == null || 
+
+            if (_lastSpeedLimitLatitude == null ||
                 _lastSpeedLimitLongitude == null ||
-                _calculateDistance(_lastSpeedLimitLatitude!, _lastSpeedLimitLongitude!, lat, lng) > 100) {
+                _calculateDistance(
+                      _lastSpeedLimitLatitude!,
+                      _lastSpeedLimitLongitude!,
+                      lat,
+                      lng,
+                    ) >
+                    100) {
               _getSpeedLimitForLocation(lat, lng);
             }
           }
@@ -225,13 +232,15 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
-        if (data['status'] == 'OK' && data['results'] != null && data['results'].isNotEmpty) {
+
+        if (data['status'] == 'OK' &&
+            data['results'] != null &&
+            data['results'].isNotEmpty) {
           final result = data['results'][0];
-          
+
           String? roadName;
           String? formattedAddress = result['formatted_address'];
-          
+
           for (var component in result['address_components']) {
             final types = List<String>.from(component['types']);
             if (types.contains('route')) {
@@ -239,7 +248,7 @@ class _HomePageState extends State<HomePage> {
               break;
             }
           }
-          
+
           setState(() {
             _roadName = roadName;
             _currentAddress = formattedAddress;
@@ -262,11 +271,11 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['speedLimits'] != null && data['speedLimits'].isNotEmpty) {
           final speedLimitData = data['speedLimits'][0];
           final speedLimitKph = speedLimitData['speedLimit'];
-          
+
           setState(() {
             _speedLimit = speedLimitKph.round();
           });
@@ -288,27 +297,27 @@ class _HomePageState extends State<HomePage> {
 
   void _setDefaultSpeedLimit() {
     int defaultSpeed = 60;
-    
+
     if (_roadName != null) {
       final roadNameLower = _roadName!.toLowerCase();
-      
-      if (roadNameLower.contains('highway') || 
+
+      if (roadNameLower.contains('highway') ||
           roadNameLower.contains('expressway') ||
           roadNameLower.contains('freeway')) {
         defaultSpeed = 100;
-      } else if (roadNameLower.contains('avenue') || 
-                 roadNameLower.contains('boulevard')) {
+      } else if (roadNameLower.contains('avenue') ||
+          roadNameLower.contains('boulevard')) {
         defaultSpeed = 60;
-      } else if (roadNameLower.contains('street') || 
-                 roadNameLower.contains('road')) {
+      } else if (roadNameLower.contains('street') ||
+          roadNameLower.contains('road')) {
         defaultSpeed = 40;
       }
     }
-    
+
     setState(() {
       _speedLimit = defaultSpeed;
     });
-    
+
     final helmetId = _helmetId;
     if (helmetId != null) {
       _database.child('$helmetId/speedlimit').set(defaultSpeed);
@@ -329,12 +338,14 @@ class _HomePageState extends State<HomePage> {
 
     final travelTimeSeconds = _stopTime!.difference(_startTime!).inSeconds;
 
-    final travelDistance = _calculateDistance(
-      _startLatitude!,
-      _startLongitude!,
-      _stopLatitude!,
-      _stopLongitude!,
-    ) / 1000;
+    final travelDistance =
+        _calculateDistance(
+          _startLatitude!,
+          _startLongitude!,
+          _stopLatitude!,
+          _stopLongitude!,
+        ) /
+        1000;
 
     final timePeriod = _getTimePeriod(_startTime!);
 
@@ -453,7 +464,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             Center(
               child: Container(
                 width: 120,
@@ -461,10 +472,7 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFEF4444),
-                    width: 6,
-                  ),
+                  border: Border.all(color: const Color(0xFFEF4444), width: 6),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFFEF4444).withOpacity(0.15),
@@ -479,8 +487,8 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _isLoadingSpeedLimit 
-                            ? '...' 
+                        _isLoadingSpeedLimit
+                            ? '...'
                             : (_speedLimit?.toString() ?? '--'),
                         style: GoogleFonts.inter(
                           color: const Color(0xFFEF4444),
@@ -544,9 +552,9 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           Text(
-            _currentSpeed.toStringAsFixed(1),
+            _currentSpeed.toInt().toString(),
             style: GoogleFonts.inter(
               fontSize: 48,
               fontWeight: FontWeight.w800,
@@ -554,7 +562,7 @@ class _HomePageState extends State<HomePage> {
               letterSpacing: -1.0,
             ),
           ),
-          
+
           Text(
             "km/h",
             style: GoogleFonts.inter(
@@ -594,9 +602,12 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           Text(
-            _travelTimeDisplay.split(':').sublist(1).join(':'), // Remove hours for cleaner display
+            _travelTimeDisplay
+                .split(':')
+                .sublist(1)
+                .join(':'), // Remove hours for cleaner display
             style: GoogleFonts.inter(
               fontSize: 36,
               fontWeight: FontWeight.w800,
@@ -681,13 +692,9 @@ class _HomePageState extends State<HomePage> {
                     // Speed Limit and Current Speed in same row
                     Row(
                       children: [
-                        Expanded(
-                          child: _buildSpeedLimitCard(),
-                        ),
+                        Expanded(child: _buildSpeedLimitCard()),
                         const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildSpeedDisplayCard(),
-                        ),
+                        Expanded(child: _buildSpeedDisplayCard()),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -723,7 +730,9 @@ class _HomePageState extends State<HomePage> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF10B981).withOpacity(0.3),
+                                      color: const Color(
+                                        0xFF10B981,
+                                      ).withOpacity(0.3),
                                       blurRadius: 16,
                                       offset: const Offset(0, 4),
                                     ),
@@ -836,12 +845,16 @@ class _HomePageState extends State<HomePage> {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     elevation: 0,
-                                    shadowColor: (_isStarted 
-                                        ? const Color(0xFFEF4444) 
-                                        : const Color(0xFF3B82F6)).withOpacity(0.3),
+                                    shadowColor:
+                                        (_isStarted
+                                                ? const Color(0xFFEF4444)
+                                                : const Color(0xFF3B82F6))
+                                            .withOpacity(0.3),
                                   ),
                                   child: Text(
-                                    _isStarted ? 'Stop Journey' : 'Start Journey',
+                                    _isStarted
+                                        ? 'Stop Journey'
+                                        : 'Start Journey',
                                     style: GoogleFonts.inter(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,
@@ -868,13 +881,12 @@ class _HomePageState extends State<HomePage> {
                       cardColor: const Color(0xFFEFF6FF),
                       onPressed: () {
                         if (widget.onNavigateToHistory != null) {
-                          widget
-                              .onNavigateToHistory!();
+                          widget.onNavigateToHistory!();
                         }
                       },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     Row(
                       children: [
                         Expanded(
@@ -964,9 +976,7 @@ class _HomePageState extends State<HomePage> {
                   decoration: BoxDecoration(
                     color: iconColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: iconColor.withOpacity(0.2),
-                    ),
+                    border: Border.all(color: iconColor.withOpacity(0.2)),
                   ),
                   child: Icon(icon, color: iconColor, size: 24),
                 ),
