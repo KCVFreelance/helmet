@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:http/http.dart' as http;
-import 'signin.dart'; // Import to access UserSession
+import 'signin.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onNavigateToHistory;
@@ -52,9 +52,8 @@ class _HomePageState extends State<HomePage> {
   String? _currentAddress;
   double? _lastSpeedLimitLatitude;
   double? _lastSpeedLimitLongitude;
-
-  static const String GOOGLE_MAPS_API_KEY =
-      'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
+  
+  static const String GOOGLE_MAPS_API_KEY = 'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
 
   @override
   void dispose() {
@@ -80,12 +79,12 @@ class _HomePageState extends State<HomePage> {
               speed = cSpeed.toDouble();
             else if (cSpeed is String)
               speed = double.tryParse(cSpeed) ?? 0.0;
-
+            
             final rawLat = coordData['latitude'];
             final rawLng = coordData['longitude'];
             double lat = 0.0;
             double lng = 0.0;
-
+            
             if (rawLat is double) {
               lat = rawLat;
             } else if (rawLat is int) {
@@ -93,7 +92,7 @@ class _HomePageState extends State<HomePage> {
             } else if (rawLat is String) {
               lat = double.tryParse(rawLat) ?? 0.0;
             }
-
+            
             if (rawLng is double) {
               lng = rawLng;
             } else if (rawLng is int) {
@@ -101,22 +100,16 @@ class _HomePageState extends State<HomePage> {
             } else if (rawLng is String) {
               lng = double.tryParse(rawLng) ?? 0.0;
             }
-
+            
             setState(() {
               _currentSpeed = speed;
               latitude = lat;
               longitude = lng;
             });
-
-            if (_lastSpeedLimitLatitude == null ||
+            
+            if (_lastSpeedLimitLatitude == null || 
                 _lastSpeedLimitLongitude == null ||
-                _calculateDistance(
-                      _lastSpeedLimitLatitude!,
-                      _lastSpeedLimitLongitude!,
-                      lat,
-                      lng,
-                    ) >
-                    100) {
+                _calculateDistance(_lastSpeedLimitLatitude!, _lastSpeedLimitLongitude!, lat, lng) > 100) {
               _getSpeedLimitForLocation(lat, lng);
             }
           }
@@ -232,15 +225,13 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
-        if (data['status'] == 'OK' &&
-            data['results'] != null &&
-            data['results'].isNotEmpty) {
+        
+        if (data['status'] == 'OK' && data['results'] != null && data['results'].isNotEmpty) {
           final result = data['results'][0];
-
+          
           String? roadName;
           String? formattedAddress = result['formatted_address'];
-
+          
           for (var component in result['address_components']) {
             final types = List<String>.from(component['types']);
             if (types.contains('route')) {
@@ -248,7 +239,7 @@ class _HomePageState extends State<HomePage> {
               break;
             }
           }
-
+          
           setState(() {
             _roadName = roadName;
             _currentAddress = formattedAddress;
@@ -271,11 +262,11 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
+        
         if (data['speedLimits'] != null && data['speedLimits'].isNotEmpty) {
           final speedLimitData = data['speedLimits'][0];
           final speedLimitKph = speedLimitData['speedLimit'];
-
+          
           setState(() {
             _speedLimit = speedLimitKph.round();
           });
@@ -297,27 +288,27 @@ class _HomePageState extends State<HomePage> {
 
   void _setDefaultSpeedLimit() {
     int defaultSpeed = 60;
-
+    
     if (_roadName != null) {
       final roadNameLower = _roadName!.toLowerCase();
-
-      if (roadNameLower.contains('highway') ||
+      
+      if (roadNameLower.contains('highway') || 
           roadNameLower.contains('expressway') ||
           roadNameLower.contains('freeway')) {
         defaultSpeed = 100;
-      } else if (roadNameLower.contains('avenue') ||
-          roadNameLower.contains('boulevard')) {
+      } else if (roadNameLower.contains('avenue') || 
+                 roadNameLower.contains('boulevard')) {
         defaultSpeed = 60;
-      } else if (roadNameLower.contains('street') ||
-          roadNameLower.contains('road')) {
+      } else if (roadNameLower.contains('street') || 
+                 roadNameLower.contains('road')) {
         defaultSpeed = 40;
       }
     }
-
+    
     setState(() {
       _speedLimit = defaultSpeed;
     });
-
+    
     final helmetId = _helmetId;
     if (helmetId != null) {
       _database.child('$helmetId/speedlimit').set(defaultSpeed);
@@ -338,14 +329,12 @@ class _HomePageState extends State<HomePage> {
 
     final travelTimeSeconds = _stopTime!.difference(_startTime!).inSeconds;
 
-    final travelDistance =
-        _calculateDistance(
-          _startLatitude!,
-          _startLongitude!,
-          _stopLatitude!,
-          _stopLongitude!,
-        ) /
-        1000;
+    final travelDistance = _calculateDistance(
+      _startLatitude!,
+      _startLongitude!,
+      _stopLatitude!,
+      _stopLongitude!,
+    ) / 1000;
 
     final timePeriod = _getTimePeriod(_startTime!);
 
@@ -433,93 +422,7 @@ class _HomePageState extends State<HomePage> {
     _loadTripState();
   }
 
-  Widget _buildSpeedLimitCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F9FF),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blueGrey.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Text(
-                "SPEED LIMIT",
-                style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1A1D29),
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Center(
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFEF4444), width: 6),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFEF4444).withOpacity(0.15),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _isLoadingSpeedLimit
-                            ? '...'
-                            : (_speedLimit?.toString() ?? '--'),
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFFEF4444),
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                          height: 1.0,
-                        ),
-                      ),
-                      Text(
-                        'km/h',
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFFEF4444),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpeedDisplayCard() {
+  Widget _buildDashboardCard() {
     Color speedColor = const Color(0xFF3B82F6);
     if (_speedLimit != null && _currentSpeed > _speedLimit!) {
       speedColor = const Color(0xFFEF4444);
@@ -531,93 +434,252 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.blueGrey.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         children: [
-          Text(
-            "CURRENT",
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF6B7280),
-              letterSpacing: -0.2,
-            ),
+          // Speed Metrics Row
+          Row(
+            children: [
+              // Speed Limit
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      "SPEED LIMIT",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF6B7280),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFEF4444),
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFEF4444).withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _isLoadingSpeedLimit ? '...' : (_speedLimit?.toString() ?? '--'),
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFFEF4444),
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                height: 1.0,
+                              ),
+                            ),
+                            Text(
+                              'km/h',
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFFEF4444),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                height: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Current Speed
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      "CURRENT SPEED",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF6B7280),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _currentSpeed.toInt().toString(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        color: speedColor,
+                        letterSpacing: -1.0,
+                      ),
+                    ),
+                    Text(
+                      "km/h",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-
-          Text(
-            _currentSpeed.toInt().toString(),
-            style: GoogleFonts.inter(
-              fontSize: 48,
-              fontWeight: FontWeight.w800,
-              color: speedColor,
-              letterSpacing: -1.0,
-            ),
+          
+          const SizedBox(height: 24),
+          
+          // Divider
+          Container(
+            height: 1,
+            color: const Color(0xFFF3F4F6),
           ),
-
-          Text(
-            "km/h",
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF6B7280),
-            ),
+          const SizedBox(height: 24),
+          
+          // Travel Time and Control
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "TRAVEL TIME",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF6B7280),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _travelTimeDisplay,
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1F2937),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Start/Stop Button
+              SizedBox(
+                width: 140,
+                child: ElevatedButton(
+                  onPressed: _handleTripControl,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isStarted ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: Text(
+                    _isStarted ? 'STOP' : 'START',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTravelTimeCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blueGrey.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            "TRAVEL TIME",
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF6B7280),
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 8),
+  Future<void> _handleTripControl() async {
+    final helmetId = _helmetId;
+    if (helmetId == null) return;
 
-          Text(
-            _travelTimeDisplay
-                .split(':')
-                .sublist(1)
-                .join(':'), // Remove hours for cleaner display
-            style: GoogleFonts.inter(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF1A1D29),
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
-    );
+    final coordSnapshot = await _database.child('$helmetId/coordinates/gps').get();
+    double lat = 0.0;
+    double lng = 0.0;
+    
+    if (coordSnapshot.exists) {
+      final coordData = coordSnapshot.value as Map<dynamic, dynamic>;
+      final rawLat = coordData['latitude'];
+      final rawLng = coordData['longitude'];
+      
+      if (rawLat is double) lat = rawLat;
+      else if (rawLat is int) lat = rawLat.toDouble();
+      else if (rawLat is String) lat = double.tryParse(rawLat) ?? 0.0;
+      
+      if (rawLng is double) lng = rawLng;
+      else if (rawLng is int) lng = rawLng.toDouble();
+      else if (rawLng is String) lng = double.tryParse(rawLng) ?? 0.0;
+    }
+
+    setState(() {
+      _isStarted = !_isStarted;
+      if (_isStarted) {
+        _startTime = DateTime.now();
+        _stopTime = null;
+        _currentDuration = Duration.zero;
+        _startLatitude = lat;
+        _startLongitude = lng;
+        _startTimer();
+      } else {
+        _stopTime = DateTime.now();
+        _stopLatitude = lat;
+        _stopLongitude = lng;
+        _stopTimer();
+        if (_startTime != null && _stopTime != null) {
+          _currentDuration = _stopTime!.difference(_startTime!);
+        }
+      }
+    });
+
+    final now = DateTime.now();
+    final dateStr = "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+
+    if (_isStarted) {
+      await _database.child('$helmetId/start').set({
+        'date': dateStr,
+        'time': timeStr,
+        'latitude': lat,
+        'longitude': lng,
+      });
+    } else {
+      await _database.child('$helmetId/stop').set({
+        'date': dateStr,
+        'time': timeStr,
+        'latitude': lat,
+        'longitude': lng,
+      });
+      await _saveTripData();
+    }
   }
 
   @override
@@ -626,28 +688,27 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Simplified Header (Live banner removed)
             Container(
               decoration: BoxDecoration(
                 color: Colors.blue[700],
                 boxShadow: [
                   BoxShadow(
                     color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     "Top Shield",
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       fontSize: 24,
                       letterSpacing: 0.5,
                     ),
@@ -656,32 +717,34 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
+            // Content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Welcome Section
                     Container(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
+                      margin: const EdgeInsets.only(bottom: 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "Welcome back,",
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF6B7280),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _userName,
-                            style: GoogleFonts.inter(
+                            _userName.isNotEmpty ? _userName : "Driver",
+                            style: GoogleFonts.poppins(
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1A1D29),
+                              color: const Color(0xFF1F2937),
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -689,246 +752,56 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    // Speed Limit and Current Speed in same row
-                    Row(
-                      children: [
-                        Expanded(child: _buildSpeedLimitCard()),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildSpeedDisplayCard()),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Travel Time below
-                    _buildTravelTimeCard(),
+                    // Dashboard Card
+                    _buildDashboardCard(),
                     const SizedBox(height: 24),
 
-                    // System Status Card (Journey Control without title)
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.blueGrey.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFF10B981,
-                                      ).withOpacity(0.3),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.directions_bike_outlined,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    final helmetId = _helmetId;
-                                    if (helmetId == null) return;
-
-                                    final coordSnapshot = await _database
-                                        .child('$helmetId/coordinates/gps')
-                                        .get();
-                                    double lat = 0.0;
-                                    double lng = 0.0;
-                                    if (coordSnapshot.exists) {
-                                      final coordData =
-                                          coordSnapshot.value
-                                              as Map<dynamic, dynamic>;
-                                      final rawLat = coordData['latitude'];
-                                      final rawLng = coordData['longitude'];
-                                      if (rawLat is double) {
-                                        lat = rawLat;
-                                      } else if (rawLat is int) {
-                                        lat = rawLat.toDouble();
-                                      } else if (rawLat is String) {
-                                        lat = double.tryParse(rawLat) ?? 0.0;
-                                      }
-                                      if (rawLng is double) {
-                                        lng = rawLng;
-                                      } else if (rawLng is int) {
-                                        lng = rawLng.toDouble();
-                                      } else if (rawLng is String) {
-                                        lng = double.tryParse(rawLng) ?? 0.0;
-                                      }
-                                    }
-
-                                    setState(() {
-                                      _isStarted = !_isStarted;
-                                      if (_isStarted) {
-                                        _startTime = DateTime.now();
-                                        _stopTime = null;
-                                        _currentDuration = Duration.zero;
-                                        _startLatitude = lat;
-                                        _startLongitude = lng;
-                                        _startTimer();
-                                      } else {
-                                        _stopTime = DateTime.now();
-                                        _stopLatitude = lat;
-                                        _stopLongitude = lng;
-                                        _stopTimer();
-                                        if (_startTime != null &&
-                                            _stopTime != null) {
-                                          _currentDuration = _stopTime!
-                                              .difference(_startTime!);
-                                        }
-                                      }
-                                    });
-
-                                    final now = DateTime.now();
-                                    final dateStr =
-                                        "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-                                    final timeStr =
-                                        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
-
-                                    if (_isStarted) {
-                                      await _database
-                                          .child('$helmetId/start')
-                                          .set({
-                                            'date': dateStr,
-                                            'time': timeStr,
-                                            'latitude': lat,
-                                            'longitude': lng,
-                                          });
-                                    } else {
-                                      await _database
-                                          .child('$helmetId/stop')
-                                          .set({
-                                            'date': dateStr,
-                                            'time': timeStr,
-                                            'latitude': lat,
-                                            'longitude': lng,
-                                          });
-
-                                      await _saveTripData();
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _isStarted
-                                        ? const Color(0xFFEF4444)
-                                        : const Color(0xFF3B82F6),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 0,
-                                    shadowColor:
-                                        (_isStarted
-                                                ? const Color(0xFFEF4444)
-                                                : const Color(0xFF3B82F6))
-                                            .withOpacity(0.3),
-                                  ),
-                                  child: Text(
-                                    _isStarted
-                                        ? 'Stop Journey'
-                                        : 'Start Journey',
-                                    style: GoogleFonts.inter(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
+                    // Speed Analytics Card (Full width)
                     _buildFeatureCard(
-                      icon: Icons.timeline_outlined,
+                      icon: Icons.analytics_outlined,
+                      title: "Speed Analytics",
+                      description: "View detailed speed history and driving patterns",
                       iconColor: const Color(0xFF3B82F6),
-                      title: "Speed History",
-                      description:
-                          "View your speed records and detailed analytics to track your driving patterns.",
-                      buttonText: "View Analytics",
-                      buttonColor: const Color(0xFF3B82F6),
                       cardColor: const Color(0xFFEFF6FF),
-                      onPressed: () {
-                        if (widget.onNavigateToHistory != null) {
-                          widget.onNavigateToHistory!();
-                        }
-                      },
+                      buttonColor: const Color(0xFF3B82F6),
+                      onPressed: widget.onNavigateToHistory,
+                      isFullWidth: true,
                     ),
                     const SizedBox(height: 16),
 
+                    // Parking Locator and Travel Stats Row
                     Row(
                       children: [
                         Expanded(
                           child: _buildFeatureCard(
-                            icon: Icons.local_parking_outlined,
+                            icon: Icons.location_on_outlined,
+                            title: "Parking Locator",
+                            description: "Find your parked vehicle location",
                             iconColor: const Color(0xFF10B981),
-                            title: "Parking Location",
-                            description:
-                                "Find where you parked your vehicle with precise location tracking.",
-                            buttonText: "Find Location",
-                            buttonColor: const Color(0xFF10B981),
                             cardColor: const Color(0xFFECFDF5),
-                            isCompact: true,
-                            onPressed: () {
-                              if (widget.onNavigateToMap != null) {
-                                widget.onNavigateToMap!();
-                              }
-                            },
+                            buttonColor: const Color(0xFF10B981),
+                            onPressed: widget.onNavigateToMap,
+                            isFullWidth: false,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: _buildFeatureCard(
                             icon: Icons.bar_chart_outlined,
+                            title: "Travel Stats",
+                            description: "Comprehensive travel metrics",
                             iconColor: const Color(0xFF8B5CF6),
-                            title: "Travel Statistics",
-                            description:
-                                "Comprehensive travel data and performance metrics analysis.",
-                            buttonText: "View Stats",
-                            buttonColor: const Color(0xFF8B5CF6),
                             cardColor: const Color(0xFFF5F3FF),
-                            isCompact: true,
-                            onPressed: () {
-                              if (widget.onNavigateToProfile != null) {
-                                widget.onNavigateToProfile!();
-                              }
-                            },
+                            buttonColor: const Color(0xFF8B5CF6),
+                            onPressed: widget.onNavigateToProfile,
+                            isFullWidth: false,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    
+                    // Add some bottom padding to ensure all content is visible
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -941,99 +814,102 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildFeatureCard({
     required IconData icon,
-    required Color iconColor,
     required String title,
     required String description,
-    required String buttonText,
-    required Color buttonColor,
+    required Color iconColor,
     required Color cardColor,
-    bool isCompact = false,
-    required VoidCallback onPressed,
+    required Color buttonColor,
+    required VoidCallback? onPressed,
+    required bool isFullWidth,
   }) {
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: iconColor.withOpacity(0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.blueGrey.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
+      child: Material(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onPressed,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Centered Icon at the top
+                Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: iconColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: iconColor.withOpacity(0.2)),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: iconColor.withOpacity(0.2),
+                    ),
                   ),
                   child: Icon(icon, color: iconColor, size: 24),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: Text(
+                
+                const SizedBox(height: 12),
+                
+                // Title below the icon
+                Text(
                   title,
-                  style: GoogleFonts.inter(
-                    fontSize: isCompact ? 16 : 18,
+                  style: GoogleFonts.poppins(
+                    fontSize: isFullWidth ? 18 : 16,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1A1D29),
+                    color: const Color(0xFF1F2937),
                     letterSpacing: -0.3,
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: isCompact ? 12 : 16),
-
-          Text(
-            description,
-            style: GoogleFonts.inter(
-              fontSize: isCompact ? 13 : 14,
-              color: const Color(0xFF6B7280),
-              height: 1.4,
-              fontWeight: FontWeight.w400,
+                
+                const SizedBox(height: 8),
+                
+                // Description below the title
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: isFullWidth ? 14 : 13,
+                    color: const Color(0xFF6B7280),
+                    height: 1.4,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Button
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: buttonColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "View",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          SizedBox(height: isCompact ? 16 : 20),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: buttonColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: isCompact ? 12 : 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                buttonText,
-                style: GoogleFonts.inter(
-                  fontSize: isCompact ? 14 : 15,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
