@@ -19,8 +19,12 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // Raw parsed data from Firebase
   // hourlyData[date][hour] = speed
-  final Map<DateTime, Map<int, double>> hourlyData = {};
+  // final Map<DateTime, Map<int, double>> hourlyData = {};
   // daily speeds aggregated (list of speeds per date)
+  // final Map<DateTime, List<double>> dailySpeeds = {};
+
+  // Change to store all time points as fractional hours
+  final Map<DateTime, Map<double, double>> timeData = {};
   final Map<DateTime, List<double>> dailySpeeds = {};
 
   List<FlSpot> chartData = [];
@@ -64,7 +68,7 @@ class _HistoryPageState extends State<HistoryPage> {
       final coordsRef = FirebaseDatabase.instance.ref("$helmetId/coordinates");
       final snapshot = await coordsRef.get();
 
-      hourlyData.clear();
+      timeData.clear();
       dailySpeeds.clear();
 
       if (snapshot.exists) {
@@ -75,7 +79,7 @@ class _HistoryPageState extends State<HistoryPage> {
           final dt = _parseDateKey(key); // dd-MM-yyyy
           if (dt == null) continue;
 
-          final Map<int, double> hours = {};
+          final Map<double, double> times = {};
           final List<double> daySpeedList = [];
 
           for (final timeNode in dateNode.children) {
@@ -92,18 +96,22 @@ class _HistoryPageState extends State<HistoryPage> {
             final speedVal = timeNode.child('speed_kmph').value;
             if (speedVal != null) {
               final speed = double.tryParse(speedVal.toString()) ?? 0.0;
-              // parse hour from "7:00" or "07:00"
-              final hourPart = timeKey.split(':').first;
-              final hour = int.tryParse(hourPart) ?? -1;
-              if (hour >= 0) {
-                hours[hour] = speed;
-                daySpeedList.add(speed);
+              // parse hour and minute from "7:21" or "07:21"
+              final timeParts = timeKey.split(':');
+              if (timeParts.length >= 2) {
+                final hour = int.tryParse(timeParts[0]) ?? -1;
+                final minute = int.tryParse(timeParts[1]) ?? 0;
+                if (hour >= 0 && minute >= 0) {
+                  final timeAsDouble = hour + (minute / 60.0);
+                  times[timeAsDouble] = speed;
+                  daySpeedList.add(speed);
+                }
               }
             }
           }
 
-          if (hours.isNotEmpty) {
-            hourlyData[dt] = hours;
+          if (times.isNotEmpty) {
+            timeData[dt] = times;
           }
           if (daySpeedList.isNotEmpty) {
             dailySpeeds[dt] = daySpeedList;
@@ -131,12 +139,12 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   DateTime? _parseDateKey(String key) {
-    // Expects dd-MM-yyyy
+    // Expects MM-dd-yyyy (RTDB format)
     try {
       final parts = key.split('-');
       if (parts.length != 3) return null;
-      final d = int.parse(parts[0]);
-      final m = int.parse(parts[1]);
+      final m = int.parse(parts[0]);
+      final d = int.parse(parts[1]);
       final y = int.parse(parts[2]);
       return DateTime(y, m, d);
     } catch (e) {
@@ -152,7 +160,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void _buildDateOptionsForRange(String range) {
-    final availableDates = hourlyData.keys.toList()
+    final availableDates = timeData.keys.toList()
       ..sort((a, b) => b.compareTo(a)); // newest first
 
     final List<String> options = [];
@@ -222,10 +230,11 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   String _formatDateKey(DateTime d) {
-    final dd = d.day.toString().padLeft(2, '0');
+    // Display as MM-dd-yyyy to match RTDB and user expectation
     final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
     final yyyy = d.year.toString();
-    return "$dd-$mm-$yyyy";
+    return "$mm-$dd-$yyyy";
   }
 
   Future<void> _buildChartForSelection() async {
@@ -259,20 +268,20 @@ class _HistoryPageState extends State<HistoryPage> {
       return;
     }
 
-    final hours = hourlyData[dt] ?? {};
-    if (hours.isEmpty) {
+    final times = timeData[dt] ?? {};
+    if (times.isEmpty) {
       chartData = [];
       avgSpeed = maxSpeed = minSpeed = 0.0;
       return;
     }
 
-    final List<int> sortedHours = hours.keys.toList()..sort();
+    final List<double> sortedTimes = times.keys.toList()..sort();
     final List<FlSpot> spots = [];
     final List<double> speeds = [];
 
-    for (final h in sortedHours) {
-      final speed = hours[h] ?? 0.0;
-      spots.add(FlSpot(h.toDouble(), speed)); // x is actual hour like 7.0
+    for (final t in sortedTimes) {
+      final speed = times[t] ?? 0.0;
+      spots.add(FlSpot(t, speed)); // x is fractional hour
       speeds.add(speed);
     }
 
@@ -440,7 +449,10 @@ class _HistoryPageState extends State<HistoryPage> {
         return idx >= 0 && idx < days.length ? days[idx] : '';
       case "Day":
       default:
-        return '${value.toInt()}:00';
+        // Show hour:minute for "Day"
+        final hour = value.floor();
+        final minute = ((value - hour) * 60).round();
+        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
     }
   }
 

@@ -521,9 +521,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   String _calculateSafetyScore() {
+    // If both distance and alerts are zero, return 100
+    if (_totalDistance == 0 && _alertCount == 0) return "100";
+    // If distance is zero but there are alerts, score should be 0
+    if (_totalDistance == 0 && _alertCount > 0) return "0";
     // Return 100 if distance is below minimum threshold (10km)
-    if (_totalDistance < 10) return "100";
-    if (_totalDistance == 0) return "100";
+    if (_totalDistance < 0) return "100";
 
     // Calculate alerts per kilometer
     double alertsPerKm = _alertCount / _totalDistance;

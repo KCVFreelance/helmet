@@ -52,8 +52,9 @@ class _HomePageState extends State<HomePage> {
   String? _currentAddress;
   double? _lastSpeedLimitLatitude;
   double? _lastSpeedLimitLongitude;
-  
-  static const String GOOGLE_MAPS_API_KEY = 'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
+
+  static const String GOOGLE_MAPS_API_KEY =
+      'AIzaSyAetVajoczNEi6uSLwwD_vpeHEDIdNgcQs';
 
   @override
   void dispose() {
@@ -79,12 +80,12 @@ class _HomePageState extends State<HomePage> {
               speed = cSpeed.toDouble();
             else if (cSpeed is String)
               speed = double.tryParse(cSpeed) ?? 0.0;
-            
+
             final rawLat = coordData['latitude'];
             final rawLng = coordData['longitude'];
             double lat = 0.0;
             double lng = 0.0;
-            
+
             if (rawLat is double) {
               lat = rawLat;
             } else if (rawLat is int) {
@@ -92,7 +93,7 @@ class _HomePageState extends State<HomePage> {
             } else if (rawLat is String) {
               lat = double.tryParse(rawLat) ?? 0.0;
             }
-            
+
             if (rawLng is double) {
               lng = rawLng;
             } else if (rawLng is int) {
@@ -100,16 +101,22 @@ class _HomePageState extends State<HomePage> {
             } else if (rawLng is String) {
               lng = double.tryParse(rawLng) ?? 0.0;
             }
-            
+
             setState(() {
               _currentSpeed = speed;
               latitude = lat;
               longitude = lng;
             });
-            
-            if (_lastSpeedLimitLatitude == null || 
+
+            if (_lastSpeedLimitLatitude == null ||
                 _lastSpeedLimitLongitude == null ||
-                _calculateDistance(_lastSpeedLimitLatitude!, _lastSpeedLimitLongitude!, lat, lng) > 100) {
+                _calculateDistance(
+                      _lastSpeedLimitLatitude!,
+                      _lastSpeedLimitLongitude!,
+                      lat,
+                      lng,
+                    ) >
+                    100) {
               _getSpeedLimitForLocation(lat, lng);
             }
           }
@@ -140,7 +147,8 @@ class _HomePageState extends State<HomePage> {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_startTime != null) {
         setState(() {
-          _currentDuration = DateTime.now().difference(_startTime!);
+          // Use Philippine time for duration calculation
+          _currentDuration = _nowPhilippines.difference(_startTime!);
         });
       }
     });
@@ -179,9 +187,12 @@ class _HomePageState extends State<HomePage> {
     return degrees * (math.pi / 180);
   }
 
+  // Updated time period logic - based on stop time
   String _getTimePeriod(DateTime dateTime) {
     int hour = dateTime.hour;
-    if (hour >= 16 && hour <= 23) {
+    // Evening: 16:00 to 1:59 (next day)
+    // Morning: 2:00 to 15:59
+    if (hour >= 16 || hour <= 1) {
       return 'evening';
     } else {
       return 'morning';
@@ -225,13 +236,15 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
-        if (data['status'] == 'OK' && data['results'] != null && data['results'].isNotEmpty) {
+
+        if (data['status'] == 'OK' &&
+            data['results'] != null &&
+            data['results'].isNotEmpty) {
           final result = data['results'][0];
-          
+
           String? roadName;
           String? formattedAddress = result['formatted_address'];
-          
+
           for (var component in result['address_components']) {
             final types = List<String>.from(component['types']);
             if (types.contains('route')) {
@@ -239,7 +252,7 @@ class _HomePageState extends State<HomePage> {
               break;
             }
           }
-          
+
           setState(() {
             _roadName = roadName;
             _currentAddress = formattedAddress;
@@ -262,11 +275,11 @@ class _HomePageState extends State<HomePage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['speedLimits'] != null && data['speedLimits'].isNotEmpty) {
           final speedLimitData = data['speedLimits'][0];
           final speedLimitKph = speedLimitData['speedLimit'];
-          
+
           setState(() {
             _speedLimit = speedLimitKph.round();
           });
@@ -288,33 +301,38 @@ class _HomePageState extends State<HomePage> {
 
   void _setDefaultSpeedLimit() {
     int defaultSpeed = 60;
-    
+
     if (_roadName != null) {
       final roadNameLower = _roadName!.toLowerCase();
-      
-      if (roadNameLower.contains('highway') || 
+
+      if (roadNameLower.contains('highway') ||
           roadNameLower.contains('expressway') ||
           roadNameLower.contains('freeway')) {
         defaultSpeed = 100;
-      } else if (roadNameLower.contains('avenue') || 
-                 roadNameLower.contains('boulevard')) {
+      } else if (roadNameLower.contains('avenue') ||
+          roadNameLower.contains('boulevard')) {
         defaultSpeed = 60;
-      } else if (roadNameLower.contains('street') || 
-                 roadNameLower.contains('road')) {
+      } else if (roadNameLower.contains('street') ||
+          roadNameLower.contains('road')) {
         defaultSpeed = 40;
       }
     }
-    
+
     setState(() {
       _speedLimit = defaultSpeed;
     });
-    
+
     final helmetId = _helmetId;
     if (helmetId != null) {
       _database.child('$helmetId/speedlimit').set(defaultSpeed);
     }
   }
 
+  // Helper to get Philippine time (UTC+8)
+  DateTime get _nowPhilippines =>
+      DateTime.now().toUtc().add(const Duration(hours: 8));
+
+  // Updated save trip data function
   Future<void> _saveTripData() async {
     final helmetId = _helmetId;
     if (helmetId == null ||
@@ -327,33 +345,70 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
+    // Calculate travel time in seconds
     final travelTimeSeconds = _stopTime!.difference(_startTime!).inSeconds;
 
-    final travelDistance = _calculateDistance(
-      _startLatitude!,
-      _startLongitude!,
-      _stopLatitude!,
-      _stopLongitude!,
-    ) / 1000;
+    // Calculate travel distance in kilometers
+    final travelDistance =
+        _calculateDistance(
+          _startLatitude!,
+          _startLongitude!,
+          _stopLatitude!,
+          _stopLongitude!,
+        ) /
+        1000;
 
-    final timePeriod = _getTimePeriod(_startTime!);
+    // Get time period based on stop time
+    final timePeriod = _getTimePeriod(_stopTime!);
 
-    final dateStr =
-        "${_startTime!.month.toString().padLeft(2, '0')}-${_startTime!.day.toString().padLeft(2, '0')}-${_startTime!.year}";
+    // Use the stop time as stored in the database for the key
+    final stopSnap = await _database.child('$helmetId/stop').get();
+    String stopTimeKey = '';
+    String dateStr = '';
+    if (stopSnap.exists && stopSnap.value is Map) {
+      final data = stopSnap.value as Map;
+      if (data['date'] != null && data['time'] != null) {
+        dateStr = data['date'];
+        final timeParts = (data['time'] as String).split(':');
+        if (timeParts.length >= 2) {
+          stopTimeKey =
+              "${timeParts[0].padLeft(2, '0')}:${timeParts[1].padLeft(2, '0')}";
+        }
+      }
+    }
+    if (dateStr.isEmpty) {
+      // fallback to computed date if not found
+      final stopPH = _stopTime!.toUtc().add(const Duration(hours: 8));
+      dateStr =
+          "${stopPH.month.toString().padLeft(2, '0')}-${stopPH.day.toString().padLeft(2, '0')}-${stopPH.year}";
+    }
+    if (stopTimeKey.isEmpty) {
+      // fallback to computed time if not found
+      final stopPH = _stopTime!.toUtc().add(const Duration(hours: 8));
+      stopTimeKey =
+          "${stopPH.hour.toString().padLeft(2, '0')}:${stopPH.minute.toString().padLeft(2, '0')}";
+    }
 
     try {
+      // Save to recentTrips with time period based on stop time
       await _database.child('$helmetId/recentTrips/$timePeriod').set({
-        'date': "$dateStr",
+        'date': dateStr,
         'distance': travelDistance.toStringAsFixed(2),
         'tTime': travelTimeSeconds,
       });
-      final timeKey =
-          "${_stopTime!.hour.toString().padLeft(2, '0')}:${_stopTime!.minute.toString().padLeft(2, '0')}";
+
+      // Save to coordinates with time based on stop time (hour:minute only)
       await _database
-          .child('$helmetId/coordinates/$dateStr/$timeKey/tDistance')
+          .child('$helmetId/coordinates/$dateStr/$stopTimeKey/tDistance')
           .set(travelDistance.toStringAsFixed(2));
+
+      debugPrint('Trip data saved successfully:');
+      debugPrint('Date: $dateStr');
+      debugPrint('Time Period: $timePeriod');
+      debugPrint('Distance: ${travelDistance.toStringAsFixed(2)} km');
+      debugPrint('Travel Time: $travelTimeSeconds seconds');
     } catch (e) {
-      print('Error saving trip data: $e');
+      debugPrint('Error saving trip data: $e');
     }
   }
 
@@ -390,13 +445,17 @@ class _HomePageState extends State<HomePage> {
       if (startSnap.exists && startSnap.value is Map) {
         final data = startSnap.value as Map;
         if (data['date'] != null && data['time'] != null) {
-          startTime = DateTime.tryParse('${data['date']}T${data['time']}');
+          // Parse as Philippine time
+          startTime = DateTime.tryParse(
+            '${data['date']}T${data['time']}+08:00',
+          );
         }
       }
       if (stopSnap.exists && stopSnap.value is Map) {
         final data = stopSnap.value as Map;
         if (data['date'] != null && data['time'] != null) {
-          stopTime = DateTime.tryParse('${data['date']}T${data['time']}');
+          // Parse as Philippine time
+          stopTime = DateTime.tryParse('${data['date']}T${data['time']}+08:00');
         }
       }
       bool started = false;
@@ -409,7 +468,7 @@ class _HomePageState extends State<HomePage> {
         _startTime = started ? startTime : null;
         _stopTime = started ? null : stopTime;
         _currentDuration = started && _startTime != null
-            ? DateTime.now().difference(_startTime!)
+            ? _nowPhilippines.difference(_startTime!)
             : Duration.zero;
       });
       if (started) _startTimer();
@@ -485,7 +544,9 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              _isLoadingSpeedLimit ? '...' : (_speedLimit?.toString() ?? '--'),
+                              _isLoadingSpeedLimit
+                                  ? '...'
+                                  : (_speedLimit?.toString() ?? '--'),
                               style: GoogleFonts.poppins(
                                 color: const Color(0xFFEF4444),
                                 fontSize: 20,
@@ -509,7 +570,7 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              
+
               // Current Speed
               Expanded(
                 child: Column(
@@ -546,16 +607,13 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Divider
-          Container(
-            height: 1,
-            color: const Color(0xFFF3F4F6),
-          ),
+          Container(height: 1, color: const Color(0xFFF3F4F6)),
           const SizedBox(height: 24),
-          
+
           // Travel Time and Control
           Row(
             children: [
@@ -585,16 +643,21 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              
+
               // Start/Stop Button
               SizedBox(
                 width: 140,
                 child: ElevatedButton(
                   onPressed: _handleTripControl,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isStarted ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                    backgroundColor: _isStarted
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF10B981),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 20,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -618,39 +681,50 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Updated trip control function with new date format
   Future<void> _handleTripControl() async {
     final helmetId = _helmetId;
     if (helmetId == null) return;
 
-    final coordSnapshot = await _database.child('$helmetId/coordinates/gps').get();
+    final coordSnapshot = await _database
+        .child('$helmetId/coordinates/gps')
+        .get();
     double lat = 0.0;
     double lng = 0.0;
-    
+
     if (coordSnapshot.exists) {
       final coordData = coordSnapshot.value as Map<dynamic, dynamic>;
       final rawLat = coordData['latitude'];
       final rawLng = coordData['longitude'];
-      
-      if (rawLat is double) lat = rawLat;
-      else if (rawLat is int) lat = rawLat.toDouble();
-      else if (rawLat is String) lat = double.tryParse(rawLat) ?? 0.0;
-      
-      if (rawLng is double) lng = rawLng;
-      else if (rawLng is int) lng = rawLng.toDouble();
-      else if (rawLng is String) lng = double.tryParse(rawLng) ?? 0.0;
+
+      if (rawLat is double)
+        lat = rawLat;
+      else if (rawLat is int)
+        lat = rawLat.toDouble();
+      else if (rawLat is String)
+        lat = double.tryParse(rawLat) ?? 0.0;
+
+      if (rawLng is double)
+        lng = rawLng;
+      else if (rawLng is int)
+        lng = rawLng.toDouble();
+      else if (rawLng is String)
+        lng = double.tryParse(rawLng) ?? 0.0;
     }
 
+    // Use Philippine time
+    final now = _nowPhilippines;
     setState(() {
       _isStarted = !_isStarted;
       if (_isStarted) {
-        _startTime = DateTime.now();
+        _startTime = now;
         _stopTime = null;
         _currentDuration = Duration.zero;
         _startLatitude = lat;
         _startLongitude = lng;
         _startTimer();
       } else {
-        _stopTime = DateTime.now();
+        _stopTime = now;
         _stopLatitude = lat;
         _stopLongitude = lng;
         _stopTimer();
@@ -660,9 +734,11 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    final now = DateTime.now();
-    final dateStr = "${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
-    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+    // Updated date format to MM-DD-YYYY, using Philippine time
+    final dateStr =
+        "${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}-${now.year}";
+    final timeStr =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
     if (_isStarted) {
       await _database.child('$helmetId/start').set({
@@ -678,6 +754,7 @@ class _HomePageState extends State<HomePage> {
         'latitude': lat,
         'longitude': lng,
       });
+      // Save trip data when stopping
       await _saveTripData();
     }
   }
@@ -760,7 +837,8 @@ class _HomePageState extends State<HomePage> {
                     _buildFeatureCard(
                       icon: Icons.analytics_outlined,
                       title: "Speed Analytics",
-                      description: "View detailed speed history and driving patterns",
+                      description:
+                          "View detailed speed history and driving patterns",
                       iconColor: const Color(0xFF3B82F6),
                       cardColor: const Color(0xFFEFF6FF),
                       buttonColor: const Color(0xFF3B82F6),
@@ -799,7 +877,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
-                    
+
                     // Add some bottom padding to ensure all content is visible
                     const SizedBox(height: 24),
                   ],
@@ -851,15 +929,13 @@ class _HomePageState extends State<HomePage> {
                   decoration: BoxDecoration(
                     color: iconColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: iconColor.withOpacity(0.2),
-                    ),
+                    border: Border.all(color: iconColor.withOpacity(0.2)),
                   ),
                   child: Icon(icon, color: iconColor, size: 24),
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Title below the icon
                 Text(
                   title,
@@ -870,9 +946,9 @@ class _HomePageState extends State<HomePage> {
                     letterSpacing: -0.3,
                   ),
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Description below the title
                 Text(
                   description,
@@ -884,9 +960,9 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Button
                 Container(
                   width: double.infinity,
